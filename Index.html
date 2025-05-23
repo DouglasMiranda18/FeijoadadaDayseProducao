@@ -1913,7 +1913,7 @@
                     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
                     // Open WhatsApp in a new tab
-                    window.open(whatsappUrl, '_blank');
+                    window.location.href = whatsappUrl;
 
                     // Clear the cart and form
                     cart = [];
