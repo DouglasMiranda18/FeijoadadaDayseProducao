@@ -311,9 +311,9 @@ function loadProductTable() {
     <td class="py-3 px-4 border-b capitalize">${getCategoryName(product.category)}</td>
     <td class="py-3 px-4 border-b">R$ ${product.price.toFixed(2)}</td>
     <td class="py-3 px-4 border-b">
-        <span class="px-2 py-1 text-sm font-medium rounded-full ${product.availability ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-            ${product.availability ? 'Sim' : 'Não'}
-        </span>
+        <button class="toggle-availability w-12 h-6 rounded-full flex items-center transition-colors duration-300 focus:outline-none ${product.availability ? 'bg-green-400' : 'bg-gray-300'}" data-id="${product.id}" aria-pressed="${product.availability}">
+            <span class="dot bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ${product.availability ? 'translate-x-6' : ''}"></span>
+        </button>
     </td>
     <td class="py-3 px-4 border-b">
         <div class="flex space-x-2">
@@ -336,6 +336,33 @@ function loadProductTable() {
 
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', () => openDeleteModal(btn.dataset.id));
+    });
+
+    // Adiciona evento para o toggle de disponibilidade
+    document.querySelectorAll('.toggle-availability').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const productId = btn.dataset.id;
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+            
+            const newAvailability = !product.availability;
+            try {
+                // Atualiza no Firebase
+                await productsRef.doc(productId).update({ availability: newAvailability });
+                
+                // Atualiza o estado local
+                product.availability = newAvailability;
+                
+                // Atualiza a interface
+                loadProductTable();
+                displayMenuItems(); // Atualiza o cardápio também
+                
+                showToast(`Produto ${newAvailability ? 'disponibilizado' : 'indisponibilizado'} com sucesso!`);
+            } catch (error) {
+                console.error('Erro ao atualizar disponibilidade:', error);
+                showToast('Erro ao atualizar disponibilidade.', 'error');
+            }
+        });
     });
 }
 
