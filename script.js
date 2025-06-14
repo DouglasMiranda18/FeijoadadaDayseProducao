@@ -50,7 +50,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyC1zIakJQ0YZSFDNKl8l_K39ajNeAbRtbU",
     authDomain: "feijoadadadayse-a074d.firebaseapp.com",
     projectId: "feijoadadadayse-a074d",
-    storageBucket: "feijoadadadayse-a074d.firebasestorage.app",
+    storageBucket: "feijoadadadayse-a074d.appspot.com",
     messagingSenderId: "193167774782",
     appId: "1:193167774782:web:6b32f1088a010d992ead6f",
     measurementId: "G-38FGHLE4V4"
@@ -58,13 +58,23 @@ const firebaseConfig = {
 
 // Inicializa o Firebase
 if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+    try {
+        firebase.initializeApp(firebaseConfig);
+        console.log('Firebase inicializado com sucesso');
+    } catch (error) {
+        console.error('Erro ao inicializar Firebase:', error);
+    }
 }
 
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 const productsRef = db.collection('products');
+
+// Adiciona listener para mudanças no estado de autenticação
+auth.onAuthStateChanged((user) => {
+    console.log('Estado de autenticação:', user ? 'Usuário logado' : 'Usuário não logado');
+});
 
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const mobileMenu = document.getElementById('mobileMenu');
@@ -113,24 +123,59 @@ function loadMenuItems() {
             </div>
         `;
 
-    productsRef.get().then((snapshot) => {
-        allProducts = [];
-        snapshot.forEach((doc) => {
-            allProducts.push({
-                id: doc.id,
-                ...doc.data()
+    productsRef.get()
+        .then((snapshot) => {
+            console.log('Dados recebidos do Firestore:', snapshot.size, 'documentos');
+            allProducts = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                console.log('Produto carregado:', {
+                    id: doc.id,
+                    ...data
+                });
+                
+                // Validação dos campos obrigatórios
+                if (!data.name || !data.price || !data.category) {
+                    console.warn('Produto com campos obrigatórios faltando:', doc.id);
+                    return;
+                }
+
+                allProducts.push({
+                    id: doc.id,
+                    name: data.name,
+                    price: Number(data.price),
+                    category: data.category,
+                    description: data.description || '',
+                    image: data.image || '',
+                    availability: data.availability !== undefined ? data.availability : true
+                });
             });
+            
+            console.log('Total de produtos carregados:', allProducts.length);
+            displayMenuItems();
+            loadProductTable();
+        })
+        .catch((error) => {
+            console.error("Erro ao carregar itens do cardápio: ", error);
+            let errorMessage = "Erro ao carregar o cardápio. ";
+            
+            if (error.code === 'permission-denied') {
+                errorMessage += "Erro de permissão. Por favor, verifique as regras do Firestore.";
+            } else if (error.code === 'unavailable') {
+                errorMessage += "Serviço indisponível. Por favor, tente novamente mais tarde.";
+            } else {
+                errorMessage += "Por favor, tente novamente mais tarde.";
+            }
+            
+            menuItems.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <p class="text-red-500">${errorMessage}</p>
+                        <button onclick="loadMenuItems()" class="mt-4 bg-caramelo hover:bg-amber-600 text-white px-4 py-2 rounded-md">
+                            Tentar Novamente
+                        </button>
+                    </div>
+                `;
         });
-        displayMenuItems();
-        loadProductTable();
-    }).catch((error) => {
-        console.error("Error loading menu items: ", error);
-        menuItems.innerHTML = `
-                <div class="col-span-full text-center py-12">
-                    <p class="text-red-500">Erro ao carregar o cardápio. Por favor, tente novamente mais tarde.</p>
-                </div>
-            `;
-    });
 }
 
 function displayMenuItems() {
@@ -148,13 +193,17 @@ function displayMenuItems() {
         filteredProducts = allProducts.filter(product => product.category === currentCategory);
     }
 
+    // Ordenar produtos: disponíveis primeiro, depois feijoadas, depois ordem alfabética
     filteredProducts.sort((a, b) => {
+        // Disponíveis primeiro
         if (a.availability && !b.availability) return -1;
         if (!a.availability && b.availability) return 1;
+        // Feijoadas primeiro
         const aHasFeijoada = a.name.toLowerCase().includes('feijoada');
         const bHasFeijoada = b.name.toLowerCase().includes('feijoada');
         if (aHasFeijoada && !bHasFeijoada) return -1;
         if (!aHasFeijoada && bHasFeijoada) return 1;
+        // Ordem alfabética
         return a.name.localeCompare(b.name, 'pt-BR');
     });
 
@@ -167,7 +216,11 @@ function displayMenuItems() {
         return;
     }
 
-    menuItems.innerHTML = filteredProducts.map(product => `
+    menuItems.innerHTML = filteredProducts.map(product => {
+        // Garantir que o preço seja um número
+        const price = typeof product.price === 'number' ? product.price : parseFloat(product.price);
+        
+        return `
             <div class="card bg-white rounded-lg shadow-md overflow-hidden ${!product.availability ? 'opacity-75' : ''}">
                 <div class="h-48 bg-${getCategoryColor(product.category)} flex items-center justify-center relative">
                     ${product.image ? `<img src="${product.image}" alt="${product.name}" class="h-full w-full object-cover">` :
@@ -183,9 +236,9 @@ function displayMenuItems() {
                 <div class="p-4">
                     <div class="flex justify-between items-start mb-2">
                         <h3 class="text-lg font-semibold text-marrom">${product.name}</h3>
-                        <span class="bg-caramelo text-white px-2 py-1 rounded-full text-sm font-medium">R$ ${product.price.toFixed(2)}</span>
+                        <span class="bg-caramelo text-white px-2 py-1 rounded-full text-sm font-medium">R$ ${price.toFixed(2)}</span>
                     </div>
-                    <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                    <p class="text-gray-600 text-sm mb-3">${product.description || ''}</p>
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-500 capitalize">${getCategoryName(product.category)}</span>
                         <button onclick="${product.availability ? `showProductDetails(${JSON.stringify({ ...product }).replace(/"/g, "'")})` : 'showToast(\'Produto indisponível\', \'error\')'}" 
@@ -195,7 +248,8 @@ function displayMenuItems() {
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+    }).join('');
 }
 
 function getCategoryColor(category) {
@@ -1161,76 +1215,6 @@ confirmAddToCart.addEventListener('click', () => {
         closeProductDetails();
     }
 });
-
-// Modify the displayMenuItems function to use the new modal
-function displayMenuItems() {
-    if (allProducts.length === 0) {
-        menuItems.innerHTML = `
-                <div class="col-span-full text-center py-12">
-                    <p class="text-gray-500">Nenhum item encontrado no cardápio.</p>
-                </div>
-            `;
-        return;
-    }
-
-    let filteredProducts = allProducts;
-    if (currentCategory !== 'all') {
-        filteredProducts = allProducts.filter(product => product.category === currentCategory);
-    }
-
-    // Ordenar produtos: disponíveis primeiro, depois feijoadas, depois ordem alfabética
-    filteredProducts.sort((a, b) => {
-        // Disponíveis primeiro
-        if (a.availability && !b.availability) return -1;
-        if (!a.availability && b.availability) return 1;
-        // Feijoadas primeiro
-        const aHasFeijoada = a.name.toLowerCase().includes('feijoada');
-        const bHasFeijoada = b.name.toLowerCase().includes('feijoada');
-        if (aHasFeijoada && !bHasFeijoada) return -1;
-        if (!aHasFeijoada && bHasFeijoada) return 1;
-        // Ordem alfabética
-        return a.name.localeCompare(b.name, 'pt-BR');
-    });
-
-    if (filteredProducts.length === 0) {
-        menuItems.innerHTML = `
-                <div class="col-span-full text-center py-12">
-                    <p class="text-gray-500">Nenhum item encontrado nesta categoria.</p>
-                </div>
-            `;
-        return;
-    }
-
-    menuItems.innerHTML = filteredProducts.map(product => `
-            <div class="card bg-white rounded-lg shadow-md overflow-hidden ${!product.availability ? 'opacity-75' : ''}">
-                <div class="h-48 bg-${getCategoryColor(product.category)} flex items-center justify-center relative">
-                    ${product.image ? `<img src="${product.image}" alt="${product.name}" class="h-full w-full object-cover">` :
-            `<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>`}
-                    ${!product.availability ? `
-                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <span class="text-white font-medium px-4 py-2 bg-vermelho rounded-md">Indisponível</span>
-                    </div>
-                    ` : ''}
-                </div>
-                <div class="p-4">
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="text-lg font-semibold text-marrom">${product.name}</h3>
-                        <span class="bg-caramelo text-white px-2 py-1 rounded-full text-sm font-medium">R$ ${product.price.toFixed(2)}</span>
-                    </div>
-                    <p class="text-gray-600 text-sm mb-3">${product.description}</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-500 capitalize">${getCategoryName(product.category)}</span>
-                        <button onclick="${product.availability ? `showProductDetails(${JSON.stringify({ ...product }).replace(/"/g, "'")})` : 'showToast(\'Produto indisponível\', \'error\')'}" 
-                            class="${product.availability ? 'bg-vermelho hover:bg-red-800' : 'bg-gray-400 cursor-not-allowed'} text-white text-sm py-1 px-3 rounded-md transition-colors">
-                            ${product.availability ? 'Adicionar' : 'Indisponível'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-}
 
 const settingsRef = db.collection('settings').doc('main');
 const closedBanner = document.getElementById('closedBanner');
