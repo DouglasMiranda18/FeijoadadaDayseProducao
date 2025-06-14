@@ -50,13 +50,17 @@ const firebaseConfig = {
     apiKey: "AIzaSyC1zIakJQ0YZSFDNKl8l_K39ajNeAbRtbU",
     authDomain: "feijoadadadayse-a074d.firebaseapp.com",
     projectId: "feijoadadadayse-a074d",
-    storageBucket: "feijoadadadayse-a074d.appspot.com",
+    storageBucket: "feijoadadadayse-a074d.firebasestorage.app",
     messagingSenderId: "193167774782",
     appId: "1:193167774782:web:6b32f1088a010d992ead6f",
     measurementId: "G-38FGHLE4V4"
 };
 
-firebase.initializeApp(firebaseConfig);
+// Inicializa o Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
