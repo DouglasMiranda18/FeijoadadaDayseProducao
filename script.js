@@ -694,7 +694,7 @@ const PAYMENT_FEES = {
     'Dinheiro': 0
 };
 
-const FREE_DELIVERY_DISTANCE = 1.5; // Distância em km para entrega gratuita
+const FREE_DELIVERY_DISTANCE = 0.4; // Distância em km para entrega gratuita
 const DELIVERY_RATE_PER_KM = 2.00; // R$ 2,00 por km
 const MIN_DELIVERY_FEE = 5.00; // Taxa mínima de entrega
 
