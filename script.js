@@ -178,6 +178,9 @@ function loadMenuItems() {
         });
 }
 
+// ==========================================================================================
+// AQUI ESTÁ A FUNÇÃO ATUALIZADA
+// ==========================================================================================
 function displayMenuItems() {
     if (allProducts.length === 0) {
         menuItems.innerHTML = `
@@ -189,23 +192,52 @@ function displayMenuItems() {
     }
 
     let filteredProducts = allProducts;
+    // O filtro inicial por categoria continua o mesmo
     if (currentCategory !== 'all') {
-        filteredProducts = allProducts.filter(product => product.category === currentCategory);
+        filteredProducts = allProducts.filter(product => product.category.toLowerCase() === currentCategory);
     }
 
-    // Ordenar produtos: disponíveis primeiro, depois feijoadas, depois ordem alfabética
-    filteredProducts.sort((a, b) => {
-        // Disponíveis primeiro
-        if (a.availability && !b.availability) return -1;
-        if (!a.availability && b.availability) return 1;
-        // Feijoadas primeiro
-        const aHasFeijoada = a.name.toLowerCase().includes('feijoada');
-        const bHasFeijoada = b.name.toLowerCase().includes('feijoada');
-        if (aHasFeijoada && !bHasFeijoada) return -1;
-        if (!aHasFeijoada && bHasFeijoada) return 1;
-        // Ordem alfabética
-        return a.name.localeCompare(b.name, 'pt-BR');
-    });
+    // --- INÍCIO DA LÓGICA DE ORDENAÇÃO CORRIGIDA ---
+
+    // SE A CATEGORIA FOR "TODOS", APLICA A ORDEM ESPECIAL
+    if (currentCategory === 'all') {
+        filteredProducts.sort((a, b) => {
+            // Regra 1: Disponibilidade
+            if (a.availability && !b.availability) return -1;
+            if (!a.availability && b.availability) return 1;
+
+            const aIsFeijoada = a.name.toLowerCase().includes('feijoada');
+            const bIsFeijoada = b.name.toLowerCase().includes('feijoada');
+            const aIsDrink = a.category.toLowerCase() === 'bebidas';
+            const bIsDrink = b.category.toLowerCase() === 'bebidas';
+
+            // Regra 2: Feijoada no topo
+            if (aIsFeijoada && !bIsFeijoada) return -1;
+            if (!aIsFeijoada && bIsFeijoada) return 1;
+            if (aIsFeijoada && bIsFeijoada) {
+                return a.name.localeCompare(b.name, 'pt-BR');
+            }
+
+            // Regra 3: Comidas antes de bebidas
+            if (!aIsDrink && bIsDrink) return -1;
+            if (aIsDrink && !bIsDrink) return 1;
+
+            // Regra 4: Ordem alfabética para os demais
+            return a.name.localeCompare(b.name, 'pt-BR');
+        });
+    } else {
+        // CASO CONTRÁRIO (PARA OUTRAS CATEGORIAS), APLICA UMA ORDEM SIMPLES
+        filteredProducts.sort((a, b) => {
+            // Regra 1: Disponibilidade
+            if (a.availability && !b.availability) return -1;
+            if (!a.availability && b.availability) return 1;
+
+            // Regra 2: Ordem alfabética
+            return a.name.localeCompare(b.name, 'pt-BR');
+        });
+    }
+    // --- FIM DA LÓGICA DE ORDENAÇÃO ---
+
 
     if (filteredProducts.length === 0) {
         menuItems.innerHTML = `
@@ -217,12 +249,11 @@ function displayMenuItems() {
     }
 
     menuItems.innerHTML = filteredProducts.map(product => {
-        // Garantir que o preço seja um número
         const price = typeof product.price === 'number' ? product.price : parseFloat(product.price);
         
         return `
             <div class="card bg-white rounded-lg shadow-md overflow-hidden ${!product.availability ? 'opacity-75' : ''}">
-                <div class="h-48 bg-${getCategoryColor(product.category)} flex items-center justify-center relative">
+                <div class="h-48 bg-${getCategoryColor(product.category.toLowerCase())} flex items-center justify-center relative">
                     ${product.image ? `<img src="${product.image}" alt="${product.name}" class="h-full w-full object-cover">` :
             `<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -251,6 +282,10 @@ function displayMenuItems() {
         `;
     }).join('');
 }
+// ==========================================================================================
+// FIM DA FUNÇÃO ATUALIZADA
+// ==========================================================================================
+
 
 function getCategoryColor(category) {
     switch (category) {
@@ -263,7 +298,7 @@ function getCategoryColor(category) {
 }
 
 function getCategoryName(category) {
-    switch (category) {
+    switch (category.toLowerCase()) {
         case 'comidas': return 'Comidas';
         case 'acompanhamentos': return 'Acompanhamentos';
         case 'bebidas': return 'Bebidas';
@@ -694,7 +729,7 @@ const PAYMENT_FEES = {
     'Dinheiro': 0
 };
 
-const FREE_DELIVERY_DISTANCE = 0.4; // Distância em km para entrega gratuita
+const FREE_DELIVERY_DISTANCE = 0.6; // Distância em km para entrega gratuita
 const DELIVERY_RATE_PER_KM = 2.00; // R$ 2,00 por km
 const MIN_DELIVERY_FEE = 5.00; // Taxa mínima de entrega
 
@@ -978,7 +1013,7 @@ function updateCartDisplay() {
         <div class="flex flex-col items-center justify-center py-8 text-gray-500">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                    </svg>
+                                        </svg>
             <p class="text-lg font-medium mb-2">Seu carrinho está vazio</p>
             <p class="text-sm">Adicione itens do cardápio para fazer seu pedido</p>
         </div>`;
@@ -996,30 +1031,30 @@ function updateCartDisplay() {
                 `<div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                    </svg>
+                                        </svg>
                 </div>`
             }
             <div class="flex-1 min-w-0">
                 <div class="flex justify-between items-start mb-2">
                     <h4 class="text-lg font-medium text-gray-900 truncate">${item.name}</h4>
                     <button onclick="removeFromCart('${item.id}')" class="text-gray-400 hover:text-vermelho transition-colors" title="Remover item">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                                    </svg>
+                                        </svg>
                     </button>
-                        </div>
+                    </div>
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-2">
                         <button onclick="updateQuantity('${item.id}', -1)" class="text-gray-500 hover:text-vermelho transition-colors p-1">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-                                                    </svg>
+                                        </svg>
                         </button>
                         <span class="text-gray-700 font-medium w-8 text-center">${item.quantity}</span>
                         <button onclick="updateQuantity('${item.id}', 1)" class="text-gray-500 hover:text-vermelho transition-colors p-1">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                                                    </svg>
+                                        </svg>
                         </button>
                     </div>
                     <div class="text-right">
