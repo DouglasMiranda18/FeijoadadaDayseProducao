@@ -762,6 +762,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateFullAddress();
     });
 
+    // Adiciona evento para recalcular frete quando o bairro for alterado
+    neighborhoodInput.addEventListener('input', () => {
+        updateFullAddress();
+    });
+
     document.getElementById('paymentMethod').addEventListener('change', updateTotals);
 });
 
@@ -864,11 +869,12 @@ function getZoneByFee(fee) {
 async function calculateDistance(address) {
     console.log('Calculando frete usando sistema de bairros');
     
-    // Extrai o bairro do endereço
-    const neighborhood = extractNeighborhoodFromAddress(address);
+    // Pega o bairro diretamente do campo do formulário
+    const neighborhoodField = document.getElementById('customerNeighborhood');
+    const neighborhood = neighborhoodField ? neighborhoodField.value.trim() : '';
     
     if (!neighborhood) {
-        console.log('Bairro não encontrado no endereço, usando taxa padrão: R$ 8,00');
+        console.log('Bairro não preenchido, usando taxa padrão: R$ 8,00');
         return 4.0; // Retorna distância que resulta em taxa padrão
     }
     
