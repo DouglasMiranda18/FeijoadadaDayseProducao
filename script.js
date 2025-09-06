@@ -612,11 +612,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchBtnText.classList.add('hidden');
                 searchBtnLoader.classList.remove('hidden');
 
-                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-                const data = await response.json();
-
-                if (data.erro) {
-                    throw new Error('CEP não encontrado');
+                // Tenta múltiplas APIs de CEP para maior confiabilidade
+                let data = null;
+                
+                try {
+                    // Primeira tentativa: ViaCEP
+                    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                    data = await response.json();
+                    
+                    if (data.erro) {
+                        throw new Error('CEP não encontrado no ViaCEP');
+                    }
+                } catch (viaCepError) {
+                    console.warn('ViaCEP falhou, tentando API alternativa:', viaCepError);
+                    
+                    try {
+                        // Segunda tentativa: API alternativa
+                        const response = await fetch(`https://cep.awesomeapi.com.br/json/${cep}`);
+                        data = await response.json();
+                        
+                        if (data.status === 400) {
+                            throw new Error('CEP não encontrado na API alternativa');
+                        }
+                        
+                        // Adapta o formato da resposta
+                        data = {
+                            logradouro: data.address || data.street || '',
+                            bairro: data.district || data.neighborhood || '',
+                            localidade: data.city || '',
+                            uf: data.state || ''
+                        };
+                    } catch (altApiError) {
+                        console.warn('API alternativa falhou:', altApiError);
+                        throw new Error('CEP não encontrado em nenhuma API');
+                    }
                 }
 
                 streetInput.value = data.logradouro || '';
@@ -630,7 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('Endereço encontrado!');
             } catch (error) {
                 console.error('Erro ao buscar CEP:', error);
-                showToast(error.message || 'Erro ao buscar CEP', 'error');
+                showToast('CEP não encontrado. Verifique o número digitado.', 'error');
 
                 streetInput.value = '';
                 neighborhoodInput.value = '';
@@ -665,11 +694,40 @@ document.addEventListener('DOMContentLoaded', () => {
             searchBtnText.classList.add('hidden');
             searchBtnLoader.classList.remove('hidden');
 
-            const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-            const data = await response.json();
-
-            if (data.erro) {
-                throw new Error('CEP não encontrado');
+            // Tenta múltiplas APIs de CEP para maior confiabilidade
+            let data = null;
+            
+            try {
+                // Primeira tentativa: ViaCEP
+                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                data = await response.json();
+                
+                if (data.erro) {
+                    throw new Error('CEP não encontrado no ViaCEP');
+                }
+            } catch (viaCepError) {
+                console.warn('ViaCEP falhou, tentando API alternativa:', viaCepError);
+                
+                try {
+                    // Segunda tentativa: API alternativa
+                    const response = await fetch(`https://cep.awesomeapi.com.br/json/${cep}`);
+                    data = await response.json();
+                    
+                    if (data.status === 400) {
+                        throw new Error('CEP não encontrado na API alternativa');
+                    }
+                    
+                    // Adapta o formato da resposta
+                    data = {
+                        logradouro: data.address || data.street || '',
+                        bairro: data.district || data.neighborhood || '',
+                        localidade: data.city || '',
+                        uf: data.state || ''
+                    };
+                } catch (altApiError) {
+                    console.warn('API alternativa falhou:', altApiError);
+                    throw new Error('CEP não encontrado em nenhuma API');
+                }
             }
 
             streetInput.value = data.logradouro || '';
@@ -683,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Endereço encontrado!');
         } catch (error) {
             console.error('Erro ao buscar CEP:', error);
-            showToast(error.message || 'Erro ao buscar CEP', 'error');
+            showToast('CEP não encontrado. Verifique o número digitado.', 'error');
 
             streetInput.value = '';
             neighborhoodInput.value = '';
@@ -722,6 +780,11 @@ const STORE_LOCATION = {
     lng: -34.92545928989991
 };
 
+// Sistema de cálculo de distância usando apenas CEP (sem Google Maps)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Sistema de cálculo de distância: Usando estimativa baseada em CEP');
+});
+
 const PAYMENT_FEES = {
     'Cartão de Crédito': 2.00,
     'Cartão de Débito': 1.00,
@@ -733,34 +796,218 @@ const FREE_DELIVERY_DISTANCE = 0.6; // Distância em km para entrega gratuita
 const DELIVERY_RATE_PER_KM = 2.00; // R$ 2,00 por km
 const MIN_DELIVERY_FEE = 5.00; // Taxa mínima de entrega
 
-// Função para calcular a distância
+// Sistema de cálculo de frete baseado em zonas de CEP (sem APIs externas)
+function calculateDeliveryFeeByZone(cep) {
+    const cepNumber = cep.replace(/\D/g, '');
+    
+    // Zona 1: Piedade e arredores (entrega gratuita)
+    const zona1 = [
+        '54410', '54411', '54412', '54413', '54414', '54415', '54416', '54417', '54418', '54419',
+        '54420', '54421', '54422', '54423', '54424', '54425', '54426', '54427', '54428', '54429'
+    ];
+    
+    // Zona 2: Jaboatão dos Guararapes (taxa baixa)
+    const zona2 = [
+        '54430', '54431', '54432', '54433', '54434', '54435', '54436', '54437', '54438', '54439',
+        '54440', '54441', '54442', '54443', '54444', '54445', '54446', '54447', '54448', '54449',
+        '54450', '54451', '54452', '54453', '54454', '54455', '54456', '54457', '54458', '54459',
+        '54460', '54461', '54462', '54463', '54464', '54465', '54466', '54467', '54468', '54469',
+        '54470', '54471', '54472', '54473', '54474', '54475', '54476', '54477', '54478', '54479',
+        '54480', '54481', '54482', '54483', '54484', '54485', '54486', '54487', '54488', '54489',
+        '54490', '54491', '54492', '54493', '54494', '54495', '54496', '54497', '54498', '54499'
+    ];
+    
+    // Zona 3: Recife (taxa média)
+    const zona3 = [
+        '50000', '50001', '50002', '50003', '50004', '50005', '50006', '50007', '50008', '50009',
+        '50010', '50011', '50012', '50013', '50014', '50015', '50016', '50017', '50018', '50019',
+        '50020', '50021', '50022', '50023', '50024', '50025', '50026', '50027', '50028', '50029',
+        '50030', '50031', '50032', '50033', '50034', '50035', '50036', '50037', '50038', '50039',
+        '50040', '50041', '50042', '50043', '50044', '50045', '50046', '50047', '50048', '50049',
+        '50050', '50051', '50052', '50053', '50054', '50055', '50056', '50057', '50058', '50059',
+        '50060', '50061', '50062', '50063', '50064', '50065', '50066', '50067', '50068', '50069',
+        '50070', '50071', '50072', '50073', '50074', '50075', '50076', '50077', '50078', '50079',
+        '50080', '50081', '50082', '50083', '50084', '50085', '50086', '50087', '50088', '50089',
+        '50090', '50091', '50092', '50093', '50094', '50095', '50096', '50097', '50098', '50099',
+        '51000', '51001', '51002', '51003', '51004', '51005', '51006', '51007', '51008', '51009',
+        '51010', '51011', '51012', '51013', '51014', '51015', '51016', '51017', '51018', '51019',
+        '51020', '51021', '51022', '51023', '51024', '51025', '51026', '51027', '51028', '51029',
+        '51030', '51031', '51032', '51033', '51034', '51035', '51036', '51037', '51038', '51039',
+        '51040', '51041', '51042', '51043', '51044', '51045', '51046', '51047', '51048', '51049',
+        '51050', '51051', '51052', '51053', '51054', '51055', '51056', '51057', '51058', '51059',
+        '51060', '51061', '51062', '51063', '51064', '51065', '51066', '51067', '51068', '51069',
+        '51070', '51071', '51072', '51073', '51074', '51075', '51076', '51077', '51078', '51079',
+        '51080', '51081', '51082', '51083', '51084', '51085', '51086', '51087', '51088', '51089',
+        '51090', '51091', '51092', '51093', '51094', '51095', '51096', '51097', '51098', '51099',
+        '52000', '52001', '52002', '52003', '52004', '52005', '52006', '52007', '52008', '52009',
+        '52010', '52011', '52012', '52013', '52014', '52015', '52016', '52017', '52018', '52019',
+        '52020', '52021', '52022', '52023', '52024', '52025', '52026', '52027', '52028', '52029',
+        '52030', '52031', '52032', '52033', '52034', '52035', '52036', '52037', '52038', '52039',
+        '52040', '52041', '52042', '52043', '52044', '52045', '52046', '52047', '52048', '52049',
+        '52050', '52051', '52052', '52053', '52054', '52055', '52056', '52057', '52058', '52059',
+        '52060', '52061', '52062', '52063', '52064', '52065', '52066', '52067', '52068', '52069',
+        '52070', '52071', '52072', '52073', '52074', '52075', '52076', '52077', '52078', '52079',
+        '52080', '52081', '52082', '52083', '52084', '52085', '52086', '52087', '52088', '52089',
+        '52090', '52091', '52092', '52093', '52094', '52095', '52096', '52097', '52098', '52099',
+        '53000', '53001', '53002', '53003', '53004', '53005', '53006', '53007', '53008', '53009',
+        '53010', '53011', '53012', '53013', '53014', '53015', '53016', '53017', '53018', '53019',
+        '53020', '53021', '53022', '53023', '53024', '53025', '53026', '53027', '53028', '53029',
+        '53030', '53031', '53032', '53033', '53034', '53035', '53036', '53037', '53038', '53039',
+        '53040', '53041', '53042', '53043', '53044', '53045', '53046', '53047', '53048', '53049',
+        '53050', '53051', '53052', '53053', '53054', '53055', '53056', '53057', '53058', '53059',
+        '53060', '53061', '53062', '53063', '53064', '53065', '53066', '53067', '53068', '53069',
+        '53070', '53071', '53072', '53073', '53074', '53075', '53076', '53077', '53078', '53079',
+        '53080', '53081', '53082', '53083', '53084', '53085', '53086', '53087', '53088', '53089',
+        '53090', '53091', '53092', '53093', '53094', '53095', '53096', '53097', '53098', '53099'
+    ];
+    
+    // Zona 4: Outros municípios de PE (taxa alta)
+    const zona4 = [
+        '54000', '54001', '54002', '54003', '54004', '54005', '54006', '54007', '54008', '54009',
+        '54010', '54011', '54012', '54013', '54014', '54015', '54016', '54017', '54018', '54019',
+        '54020', '54021', '54022', '54023', '54024', '54025', '54026', '54027', '54028', '54029',
+        '54030', '54031', '54032', '54033', '54034', '54035', '54036', '54037', '54038', '54039',
+        '54040', '54041', '54042', '54043', '54044', '54045', '54046', '54047', '54048', '54049',
+        '54050', '54051', '54052', '54053', '54054', '54055', '54056', '54057', '54058', '54059',
+        '54060', '54061', '54062', '54063', '54064', '54065', '54066', '54067', '54068', '54069',
+        '54070', '54071', '54072', '54073', '54074', '54075', '54076', '54077', '54078', '54079',
+        '54080', '54081', '54082', '54083', '54084', '54085', '54086', '54087', '54088', '54089',
+        '54090', '54091', '54092', '54093', '54094', '54095', '54096', '54097', '54098', '54099',
+        '54100', '54101', '54102', '54103', '54104', '54105', '54106', '54107', '54108', '54109',
+        '54110', '54111', '54112', '54113', '54114', '54115', '54116', '54117', '54118', '54119',
+        '54120', '54121', '54122', '54123', '54124', '54125', '54126', '54127', '54128', '54129',
+        '54130', '54131', '54132', '54133', '54134', '54135', '54136', '54137', '54138', '54139',
+        '54140', '54141', '54142', '54143', '54144', '54145', '54146', '54147', '54148', '54149',
+        '54150', '54151', '54152', '54153', '54154', '54155', '54156', '54157', '54158', '54159',
+        '54160', '54161', '54162', '54163', '54164', '54165', '54166', '54167', '54168', '54169',
+        '54170', '54171', '54172', '54173', '54174', '54175', '54176', '54177', '54178', '54179',
+        '54180', '54181', '54182', '54183', '54184', '54185', '54186', '54187', '54188', '54189',
+        '54190', '54191', '54192', '54193', '54194', '54195', '54196', '54197', '54198', '54199',
+        '54200', '54201', '54202', '54203', '54204', '54205', '54206', '54207', '54208', '54209',
+        '54210', '54211', '54212', '54213', '54214', '54215', '54216', '54217', '54218', '54219',
+        '54220', '54221', '54222', '54223', '54224', '54225', '54226', '54227', '54228', '54229',
+        '54230', '54231', '54232', '54233', '54234', '54235', '54236', '54237', '54238', '54239',
+        '54240', '54241', '54242', '54243', '54244', '54245', '54246', '54247', '54248', '54249',
+        '54250', '54251', '54252', '54253', '54254', '54255', '54256', '54257', '54258', '54259',
+        '54260', '54261', '54262', '54263', '54264', '54265', '54266', '54267', '54268', '54269',
+        '54270', '54271', '54272', '54273', '54274', '54275', '54276', '54277', '54278', '54279',
+        '54280', '54281', '54282', '54283', '54284', '54285', '54286', '54287', '54288', '54289',
+        '54290', '54291', '54292', '54293', '54294', '54295', '54296', '54297', '54298', '54299',
+        '54300', '54301', '54302', '54303', '54304', '54305', '54306', '54307', '54308', '54309',
+        '54310', '54311', '54312', '54313', '54314', '54315', '54316', '54317', '54318', '54319',
+        '54320', '54321', '54322', '54323', '54324', '54325', '54326', '54327', '54328', '54329',
+        '54330', '54331', '54332', '54333', '54334', '54335', '54336', '54337', '54338', '54339',
+        '54340', '54341', '54342', '54343', '54344', '54345', '54346', '54347', '54348', '54349',
+        '54350', '54351', '54352', '54353', '54354', '54355', '54356', '54357', '54358', '54359',
+        '54360', '54361', '54362', '54363', '54364', '54365', '54366', '54367', '54368', '54369',
+        '54370', '54371', '54372', '54373', '54374', '54375', '54376', '54377', '54378', '54379',
+        '54380', '54381', '54382', '54383', '54384', '54385', '54386', '54387', '54388', '54389',
+        '54390', '54391', '54392', '54393', '54394', '54395', '54396', '54397', '54398', '54399'
+    ];
+    
+    // Pega os primeiros 5 dígitos do CEP
+    const cepPrefix = cepNumber.substring(0, 5);
+    
+    // Verifica em qual zona o CEP está
+    if (zona1.includes(cepPrefix)) {
+        return { fee: 0, zone: 'Zona 1 - Piedade', distance: '0.5km' };
+    } else if (zona2.includes(cepPrefix)) {
+        return { fee: 3.00, zone: 'Zona 2 - Jaboatão', distance: '1.5km' };
+    } else if (zona3.includes(cepPrefix)) {
+        return { fee: 5.00, zone: 'Zona 3 - Recife', distance: '3.0km' };
+    } else if (zona4.includes(cepPrefix)) {
+        return { fee: 8.00, zone: 'Zona 4 - Outros PE', distance: '5.0km+' };
+    } else {
+        return { fee: 12.00, zone: 'Zona 5 - Outros Estados', distance: '10.0km+' };
+    }
+}
+
+// Função para calcular a distância usando apenas CEP (sem Google Maps)
 async function calculateDistance(address) {
-    return new Promise((resolve, reject) => {
-        const geocoder = new google.maps.Geocoder();
+    console.log('Calculando frete usando sistema de zonas por CEP');
+    
+    // Extrai o CEP do endereço
+    const cepMatch = address.match(/(\d{5})-?(\d{3})/);
+    if (!cepMatch) {
+        console.log('CEP não encontrado no endereço, usando taxa padrão: R$ 5,00');
+        return 5.0; // Retorna distância que resulta em taxa padrão
+    }
+    
+    const cep = cepMatch[1] + cepMatch[2];
+    const zoneInfo = calculateDeliveryFeeByZone(cep);
+    
+    console.log(`CEP ${cep} -> ${zoneInfo.zone} - Taxa: R$ ${zoneInfo.fee.toFixed(2)}`);
+    
+    // Retorna uma "distância" que resulta na taxa correta
+    // Isso é só para manter compatibilidade com o código existente
+    if (zoneInfo.fee === 0) return 0.5;
+    if (zoneInfo.fee === 3.00) return 1.5;
+    if (zoneInfo.fee === 5.00) return 3.0;
+    if (zoneInfo.fee === 8.00) return 5.0;
+    return 10.0; // Para taxa de R$ 12,00
+}
 
-        geocoder.geocode({ address: address }, (results, status) => {
-            if (status === 'OK') {
-                const customerLocation = results[0].geometry.location;
+// Função auxiliar para extrair CEP do endereço
+function extractCepFromAddress(address) {
+    const cepMatch = address.match(/(\d{5})-?(\d{3})/);
+    if (cepMatch) {
+        return cepMatch[1] + cepMatch[2];
+    }
+    return null;
+}
 
-                // Calcular distância usando a fórmula de Haversine
-                const R = 6371; // Raio da Terra em km
-                const lat1 = STORE_LOCATION.lat * Math.PI / 180;
-                const lat2 = customerLocation.lat() * Math.PI / 180;
-                const deltaLat = (customerLocation.lat() - STORE_LOCATION.lat) * Math.PI / 180;
-                const deltaLng = (customerLocation.lng() - STORE_LOCATION.lng) * Math.PI / 180;
-
-                const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-                    Math.cos(lat1) * Math.cos(lat2) *
-                    Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                const distance = R * c; // Distância em km
-
-                resolve(distance);
-            } else {
-                reject('Não foi possível calcular a distância');
-            }
-        });
-    });
+// Função para estimar distância baseada no CEP (aproximação)
+function estimateDistanceByCep(cep) {
+    // CEP do restaurante: 54410-460 (Piedade, Jaboatão dos Guararapes)
+    const storeCep = '54410460';
+    const customerCep = cep.replace(/\D/g, '');
+    
+    // CEPs próximos ao restaurante (Piedade e arredores)
+    const nearbyCeps = [
+        '54410000', '54410001', '54410002', '54410003', '54410004',
+        '54410005', '54410006', '54410007', '54410008', '54410009',
+        '54410010', '54410011', '54410012', '54410013', '54410014',
+        '54410015', '54410016', '54410017', '54410018', '54410019',
+        '54410020', '54410021', '54410022', '54410023', '54410024',
+        '54410025', '54410026', '54410027', '54410028', '54410029',
+        '54410030', '54410031', '54410032', '54410033', '54410034',
+        '54410035', '54410036', '54410037', '54410038', '54410039',
+        '54410040', '54410041', '54410042', '54410043', '54410044',
+        '54410045', '54410046', '54410047', '54410048', '54410049',
+        '54410050', '54410051', '54410052', '54410053', '54410054',
+        '54410055', '54410056', '54410057', '54410058', '54410059',
+        '54410060', '54410061', '54410062', '54410063', '54410064',
+        '54410065', '54410066', '54410067', '54410068', '54410069',
+        '54410070', '54410071', '54410072', '54410073', '54410074',
+        '54410075', '54410076', '54410077', '54410078', '54410079',
+        '54410080', '54410081', '54410082', '54410083', '54410084',
+        '54410085', '54410086', '54410087', '54410088', '54410089',
+        '54410090', '54410091', '54410092', '54410093', '54410094',
+        '54410095', '54410096', '54410097', '54410098', '54410099'
+    ];
+    
+    // Verifica se o CEP está na lista de CEPs próximos
+    if (nearbyCeps.some(cep => customerCep.startsWith(cep.substring(0, 5)))) {
+        return 0.5; // Menos de 1km
+    }
+    
+    // CEPs de Jaboatão dos Guararapes (outros bairros)
+    if (customerCep.startsWith('544')) {
+        return 1.5; // 1-2km
+    }
+    
+    // CEPs de Recife
+    if (customerCep.startsWith('50') || customerCep.startsWith('51') || customerCep.startsWith('52') || customerCep.startsWith('53')) {
+        return 3.0; // 3-5km
+    }
+    
+    // Outros CEPs de Pernambuco
+    if (customerCep.startsWith('54') || customerCep.startsWith('55') || customerCep.startsWith('56')) {
+        return 5.0; // 5-10km
+    }
+    
+    // CEPs de outros estados
+    return 10.0; // Mais de 10km
 }
 
 // Função para calcular taxa de entrega
