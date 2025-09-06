@@ -814,6 +814,7 @@ function calculateDeliveryFeeByNeighborhood(neighborhood) {
     const neighborhoodFees = {
         // Zona 1: R$ 5,00
         'loreto': 5.00,
+        'piedade': 5.00,
         'jardim piedade': 5.00,
         'cajueiro seco': 5.00,
         
@@ -830,6 +831,7 @@ function calculateDeliveryFeeByNeighborhood(neighborhood) {
         'guararapes': 10.00,
         
         // Zona 5: R$ 15,00
+        'santo amaro': 15.00,
         'setubal': 15.00,
         'boa viagem': 15.00,
         'imbiribeira': 15.00,
@@ -1509,3 +1511,4 @@ function updateClosedBanner() {
 
 // Checar status ao carregar página
 window.addEventListener('DOMContentLoaded', updateClosedBanner);
+
