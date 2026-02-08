@@ -781,13 +781,13 @@ const clearCartBtn = document.getElementById('clearCartBtn');
 const orderForm = document.getElementById('orderForm');
 
 const STORE_LOCATION = {
-    lat: -8.182395619188558,
-    lng: -34.92545928989991
+    lat: -8.182448717266935,
+    lng: -34.92541637466083
 };
 
-// Sistema de cálculo de distância usando apenas CEP (sem Google Maps)
+// Sistema de calculo de distancia usando geocodificacao (sem Google Maps)
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Sistema de cálculo de distância: Usando estimativa baseada em CEP');
+    console.log('Sistema de calculo de distancia: Usando geocodificacao por endereco');
 });
 
 const PAYMENT_FEES = {
@@ -797,7 +797,7 @@ const PAYMENT_FEES = {
     'Dinheiro': 0
 };
 
-const FREE_DELIVERY_DISTANCE = 0.6; // Distância em km para entrega gratuita
+const FREE_DELIVERY_DISTANCE = 1.0; // Distância em km para entrega gratuita
 const DELIVERY_RATE_PER_KM = 2.00; // R$ 2,00 por km
 const MIN_DELIVERY_FEE = 5.00; // Taxa mínima de entrega
 
@@ -867,31 +867,74 @@ function getZoneByFee(fee) {
     return 'Zona Padrão';
 }
 
-// Função para calcular o frete baseado no bairro (sem Google Maps)
-async function calculateDistance(address) {
-    console.log('Calculando frete usando sistema de bairros');
-    
-    // Pega o bairro diretamente do campo do formulário
-    const neighborhoodField = document.getElementById('customerNeighborhood');
-    const neighborhood = neighborhoodField ? neighborhoodField.value.trim() : '';
-    
-    if (!neighborhood) {
-        console.log('Bairro não preenchido, usando taxa padrão: R$ 8,00');
-        return 4.0; // Retorna distância que resulta em taxa padrão
+// Geocodificacao e calculo de distancia real
+const GEOCODE_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
+const GEOCODE_COUNTRY_CODES = 'br';
+const geocodeCache = new Map();
+let pendingGeocode = null;
+
+function haversineKm(a, b) {
+    const toRad = (v) => (v * Math.PI) / 180;
+    const R = 6371;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const h =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+async function geocodeAddress(address) {
+    const key = address.toLowerCase().trim();
+    if (geocodeCache.has(key)) {
+        return geocodeCache.get(key);
     }
-    
-    const neighborhoodInfo = calculateDeliveryFeeByNeighborhood(neighborhood);
-    
-    console.log(`Bairro: ${neighborhoodInfo.neighborhood} -> ${neighborhoodInfo.zone} - Taxa: R$ ${neighborhoodInfo.fee.toFixed(2)}`);
-    
-    // Retorna uma "distância" que resulta na taxa correta
-    // Isso é só para manter compatibilidade com o código existente
-    if (neighborhoodInfo.fee === 5.00) return 2.5;
-    if (neighborhoodInfo.fee === 6.00) return 3.0;
-    if (neighborhoodInfo.fee === 8.00) return 4.0;
-    if (neighborhoodInfo.fee === 10.00) return 5.0;
-    if (neighborhoodInfo.fee === 15.00) return 7.5;
-    return 4.0; // Taxa padrão
+
+    if (pendingGeocode && pendingGeocode.key === key) {
+        return pendingGeocode.promise;
+    }
+
+    const url =
+        `${GEOCODE_ENDPOINT}?format=json&limit=1&countrycodes=${GEOCODE_COUNTRY_CODES}` +
+        `&q=${encodeURIComponent(address)}`;
+
+    const promise = fetch(url, {
+        headers: {
+            'Accept-Language': 'pt-BR'
+        }
+    })
+        .then((resp) => resp.json())
+        .then((data) => {
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('Endereco nao encontrado');
+            }
+            const result = {
+                lat: parseFloat(data[0].lat),
+                lng: parseFloat(data[0].lon)
+            };
+            geocodeCache.set(key, result);
+            return result;
+        })
+        .finally(() => {
+            if (pendingGeocode && pendingGeocode.key === key) {
+                pendingGeocode = null;
+            }
+        });
+
+    pendingGeocode = { key, promise };
+    return promise;
+}
+
+// Funcao para calcular distancia real a partir do endereco informado
+async function calculateDistance(address) {
+    if (!address || !address.trim()) {
+        throw new Error('Endereco vazio');
+    }
+
+    const coords = await geocodeAddress(address);
+    return haversineKm(STORE_LOCATION, coords);
 }
 
 // Função para extrair o bairro do endereço
