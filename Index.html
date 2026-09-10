@@ -1,712 +1,393 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feijoada da Dayse - Cardápio Online</title>
-    <!-- Firebase App (the core Firebase SDK) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <!-- Firebase Auth -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <!-- Firebase Firestore -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- Firebase Storage -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    <!-- Google Maps - Temporariamente desabilitado até resolver problemas de API -->
-    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBt358-6ZkhcMiiE3Gq4vp0RsUeZC6uvH0&libraries=places"></script> -->
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        marrom: '#3e2214',
-                        caramelo: '#d58940',
-                        vermelho: '#ae3f33',
-                        bordo: '#5c1d20',
-                    },
-                    fontFamily: {
-                        'poppins': ['Poppins', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Peça a comida caseira da Feijoada da Dayse, em Piedade, Jaboatão dos Guararapes. Cardápio atualizado, pedido pelo site e acompanhamento em tempo real.">
+    <meta name="theme-color" content="#661f25">
+    <meta name="firebase-vapid-key" content="BD5Et14UlvlyguMap3MYANSGlWMMtJEFE_A_pNZFwEDcLh8U1uKbQYXpSTgmHXVId2nn9h6rEg_ZHwC0ZIQUzSg">
+    <meta name="firebase-database-url" content="https://feijoadadadayse-a074d-default-rtdb.firebaseio.com">
+    <meta property="og:title" content="Feijoada da Dayse | Cardápio e delivery">
+    <meta property="og:description" content="Feijoada, dobradinha, sururu e outros pratos de quinta a domingo, em Piedade.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <title>Feijoada da Dayse | Cardápio e delivery</title>
+    <link rel="icon" type="image/png" href="imagens/Feijoada%20Da%20Dayse(Logotipo).png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800;6..12,900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="script.js?v=5" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js" defer></script>
+    <script type="module" src="js/app.mjs?v=2.3.0"></script>
 </head>
-
 <body>
-    <!-- Product Details Modal -->
-    <div id="productDetailsModal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
-            <div class="relative">
-                <!-- Close button -->
-                <button id="closeProductModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10"
-                    title="Fechar modal" aria-label="Fechar">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+    <a class="skip-link" href="#cardapio">Pular para o cardápio</a>
 
-                <!-- Product Image -->
-                <div id="modalProductImage" class="h-96 bg-gray-200 flex items-center justify-center overflow-hidden">
-                    <img id="modalProductImageElement" src="" alt="" class="w-full h-full object-contain"
-                        style="display: none;">
-                    <svg id="modalProductImagePlaceholder" xmlns="http://www.w3.org/2000/svg"
-                        class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-            </div>
+    <header class="site-header" id="topo">
+        <div class="site-header__inner">
+            <a class="brand" href="#inicio" aria-label="Feijoada da Dayse — início">
+                <img src="imagens/Feijoada%20Da%20Dayse(Logotipo).png" alt="" width="64" height="64">
+                <span>Feijoada <small>da Dayse</small></span>
+            </a>
 
-            <!-- Product Details -->
-            <div class="p-6">
-                <h3 id="modalProductName" class="text-2xl font-bold text-marrom mb-2"></h3>
-                <p id="modalProductDescription" class="text-gray-600 mb-4"></p>
-                <div class="flex justify-between items-center mb-6">
-                    <span id="modalProductPrice" class="text-2xl font-bold text-vermelho"></span>
-                </div>
-                <button id="confirmAddToCart"
-                    class="w-full bg-vermelho hover:bg-red-800 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
-                        fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clip-rule="evenodd" />
-                    </svg>
-                    Confirmar e adicionar ao carrinho
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Header -->
-    <header class="bg-marrom text-white shadow-lg fixed w-full z-50">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center">
-                <div class="mr-3">
-                    <img src="imagens/Feijoada Da Dayse(Logotipo).png" alt="logo" class="w-10 h-10">
-
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold">Feijoada da Dayse</h1>
-                </div>
-            </div>
-            <nav class="hidden md:flex space-x-6">
-                <a href="#inicio" class="hover:text-caramelo transition-colors">Início</a>
-                <a href="#cardapio" class="hover:text-caramelo transition-colors">Cardápio</a>
-                <a href="#sobre" class="hover:text-caramelo transition-colors">Sobre</a>
-                <a href="#contato" class="hover:text-caramelo transition-colors">Contato</a>
-                <button id="adminBtn" class="hover:text-caramelo transition-colors">Admin</button>
-                <button id="cartBtn" class="hover:text-caramelo transition-colors flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span id="cartItemCount" class="ml-1">0</span>
-                </button>
+            <nav class="desktop-nav" aria-label="Navegação principal">
+                <a href="#cardapio">Cardápio</a>
+                <a id="highlightsNavLink" href="#destaques" hidden>Destaques</a>
+                <a href="#historia">Nossa história</a>
+                <a href="#contato">Onde estamos</a>
+                <button class="nav-game-button" type="button" data-open-game>Corre, Feijão!</button>
             </nav>
-            <button id="mobileMenuBtn" class="md:hidden text-white" title="Abrir menu de navegação" aria-label="Menu">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg> </button>
-        </div>
-        <!-- Mobile Menu -->
-        <div id="mobileMenu" class="hidden md:hidden bg-marrom pb-4 px-4">
-            <a href="#inicio" class="block py-2 hover:text-caramelo transition-colors">Início</a>
-            <a href="#cardapio" class="block py-2 hover:text-caramelo transition-colors">Cardápio</a>
-            <a href="#sobre" class="block py-2 hover:text-caramelo transition-colors">Sobre</a>
-            <a href="#contato" class="block py-2 hover:text-caramelo transition-colors">Contato</a>
-            <button id="adminBtnMobile" class="block py-2 hover:text-caramelo transition-colors">Admin</button>
-            <button id="cartBtnMobile" class="block py-2 hover:text-caramelo transition-colors flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Carrinho (<span id="cartItemCountMobile">0</span>)
-            </button>
+
+            <div class="header-actions">
+                <div class="header-status" id="headerStatus" aria-live="polite">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span id="headerStatusText">Consultando...</span>
+                </div>
+                <button class="header-icon-button" id="notificationBtn" type="button" aria-label="Abrir notificações" hidden>
+                    <span aria-hidden="true">●</span><b id="notificationCount" hidden>0</b>
+                </button>
+                <button class="account-trigger" id="accountBtn" type="button" aria-label="Abrir Minha Conta">
+                    <span class="account-avatar" id="accountAvatar" aria-hidden="true">D</span>
+                    <span id="accountLabel">Entrar</span>
+                </button>
+                <button class="cart-trigger" type="button" data-open-cart aria-label="Abrir sacola, 0 itens">
+                    <span class="cart-trigger__icon" aria-hidden="true">♨</span>
+                    <span class="cart-trigger__label">Sacola</span>
+                    <span class="cart-count" data-cart-count>0</span>
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="pt-24 pb-12">
-        <!-- Hero Section -->
-        <section id="inicio" class="relative h-[500px] bg-gradient-to-r from-bordo to-marrom flex items-center">
-            <div class="absolute inset-0 bg-black opacity-50"></div>
-            <div class="container mx-auto px-4 relative z-10 text-white">
-                <h2 class="text-4xl md:text-5xl font-bold mb-4">Feijoada da Dayse</h2>
-                <p class="text-xl md:text-2xl mb-8 max-w-2xl">A melhor feijoada da região, feita com ingredientes
-                    selecionados e muito amor.</p>
-                <a href="#cardapio"
-                    class="bg-caramelo hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg transition-colors inline-flex items-center">
-                    Ver Cardápio
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20"
-                        fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                            clip-rule="evenodd" />
-                    </svg>
-                </a>
-            </div>
-        </section>
+    <main>
+        <section class="hero" id="inicio" aria-labelledby="heroTitle">
+            <div class="hero__texture" aria-hidden="true"></div>
+            <div class="hero__content">
+                <div class="hero__copy">
+                    <p class="eyebrow">Piedade · Jaboatão dos Guararapes</p>
+                    <h1 id="heroTitle">Comida de panela, feita do nosso jeito.</h1>
+                    <p class="hero__lead">Feijoada, dobradinha, sururu e outros pratos que chegam à mesa com sabor de comida da casa.</p>
 
-        <!-- AVISO DE RESTAURANTE FECHADO -->
-        <div id="closedBanner" class="hidden bg-red-600 text-white text-center py-4 text-lg font-bold">Restaurante
-            fechado no momento. Não estamos aceitando pedidos.</div>
+                    <div class="store-callout" id="storeCallout" aria-live="polite">
+                        <span class="store-callout__icon" aria-hidden="true">●</span>
+                        <span>
+                            <strong id="storeStatusLabel">Consultando o horário</strong>
+                            <small id="storeStatusDetail">Quinta a domingo, das 10h às 15h</small>
+                        </span>
+                    </div>
 
-        <!-- Menu Categories -->
-        <section id="cardapio" class="py-12 bg-white">
-            <div class="container mx-auto px-4">
-                <h2 class="text-3xl font-bold text-center mb-2 text-marrom">Nosso Cardápio</h2>
-                <p class="text-center text-gray-600 mb-8">Confira nossas deliciosas opções</p>
+                    <div class="hero__actions">
+                        <a class="button button--sun" href="#cardapio">Escolher meu prato</a>
+                        <a class="button button--ghost" href="https://wa.me/5581987484019" target="_blank" rel="noopener noreferrer">Falar no WhatsApp</a>
+                    </div>
 
-                <div class="flex flex-wrap justify-center gap-4 mb-10">
-                    <button class="category-btn bg-caramelo text-white py-2 px-4 rounded-full active"
-                        data-category="all">
-                        Todos
-                    </button>
-                    <button class="category-btn bg-gray-200 text-gray-800 py-2 px-4 rounded-full"
-                        data-category="comidas">
-                        Comidas
-                    </button>
-                    <button class="category-btn bg-gray-200 text-gray-800 py-2 px-4 rounded-full"
-                        data-category="acompanhamentos">
-                        Acompanhamentos
-                    </button>
-                    <button class="category-btn bg-gray-200 text-gray-800 py-2 px-4 rounded-full"
-                        data-category="bebidas">
-                        Bebidas
-                    </button>
-                    <button class="category-btn bg-gray-200 text-gray-800 py-2 px-4 rounded-full"
-                        data-category="sobremesas">
-                        Sobremesas
-                    </button>
+                    <ul class="service-notes" aria-label="Informações do serviço">
+                        <li><span aria-hidden="true">◷</span> Quinta a domingo, 10h–15h</li>
+                        <li><span aria-hidden="true">⌂</span> Entrega calculada pelo endereço</li>
+                    </ul>
                 </div>
 
-                <!-- Menu Items -->
-                <div id="menu-items" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Menu items will be loaded here from Firebase -->
-                    <div class="flex justify-center items-center col-span-full py-12">
-                        <div class="loader"></div>
-                        <span class="ml-3 text-gray-600">Carregando cardápio...</span>
+                <div class="hero__media">
+                    <div class="hero-photo">
+                        <img id="heroFoodImage" src="imagens/Feijoada.jpeg" alt="Barraca da Feijoada da Dayse em Piedade" width="1200" height="1600">
+                        <div class="hero-photo__caption">
+                            <span class="caption-kicker" id="heroPhotoKicker">Desde 2019</span>
+                            <strong id="heroPhotoTitle">Da nossa cozinha em Piedade</strong>
+                        </div>
                     </div>
+                    <img class="hero-seal" src="imagens/Feijoada%20Da%20Dayse(Logotipo).png" alt="" width="180" height="180">
                 </div>
             </div>
         </section>
 
-        <!-- About Section -->
-        <section id="sobre" class="py-16 bg-gray-100">
-            <div class="container mx-auto px-4">
-                <div class="flex flex-col md:flex-row items-center">
-                    <div class="md:w-1/2 mb-8 md:mb-0">
-                        <div class="bg-vermelho rounded-lg p-4 inline-block mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                        </div>
-                        <h2 class="text-3xl font-bold mb-4 text-marrom">Nossa História</h2>
-                        <p class="text-gray-700 mb-4">A Feijoada da Dayse surgiu em 7 de setembro de 2019, em Piedade,
-                            Jaboatão dos Guararapes, trazendo consigo muito mais do que comida — trazendo sabor, carinho
-                            e aquele tempero que conquista.</p>
+        <aside class="closed-notice" id="closedNotice" hidden aria-live="polite">
+            <div>
+                <strong id="closedNoticeTitle">A cozinha está fechada agora.</strong>
+                <span id="closedNoticeText">Você pode olhar o cardápio e voltar no próximo horário.</span>
+            </div>
+            <a href="#cardapio">Ver o cardápio</a>
+        </aside>
 
-                        <p class="text-gray-700 mb-4">Desde o início, nos dedicamos a oferecer uma feijoada de respeito,
-                            feita com ingredientes de
-                            qualidade e um tempero que é só nosso. Mais do que isso, acreditamos que o bom atendimento
-                            faz toda a diferença. Cada cliente é recebido com atenção e simpatia, como se fosse da casa.
-                        </p>
+        <aside class="active-order-bar" id="activeOrderBar" hidden aria-live="polite">
+            <div><span class="status-dot" aria-hidden="true"></span><strong id="activeOrderLabel">Seu pedido está em preparo</strong><small id="activeOrderNumber"></small></div>
+            <button class="text-button" id="trackActiveOrderBtn" type="button">Acompanhar pedido</button>
+        </aside>
 
-                        <p class="text-gray-700 mb-4">Com o tempo, nosso cardápio cresceu para atender aos mais variados
-                            gostos. Hoje, além da feijoada, também servimos dobradinha, sururu, sarapatel e outros
-                            pratos tradicionais que aquecem o coração.</p>
-
-                        <p class="text-gray-700 mb-6">Servimos de quinta a domingo, sempre com o mesmo compromisso:
-                            entregar sabor, qualidade e
-                            aquele toque caseiro que faz lembrar a comida da vó.</p>
-
-                        <div class="flex space-x-4">
-                            <div class="text-center">
-                                <div class="text-3xl font-bold text-vermelho">6+</div>
-                                <div class="text-sm text-gray-600">Anos de experiência</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-3xl font-bold text-vermelho">1000+</div>
-                                <div class="text-sm text-gray-600">Clientes satisfeitos</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-3xl font-bold text-vermelho">20+</div>
-                                <div class="text-sm text-gray-600">Pratos especiais</div>
-                            </div>
-                        </div>
+        <section class="highlights-section" id="destaques" hidden aria-labelledby="highlightsTitle">
+            <div class="section-shell">
+                <div class="section-heading section-heading--split">
+                    <div>
+                        <p class="eyebrow eyebrow--dark">Escolhas da cozinha</p>
+                        <h2 id="highlightsTitle">Pra começar com vontade</h2>
                     </div>
-                    <img src="imagens/Feijoada.jpeg" alt="Feijoada da Dayse"
-                        class="rounded-lg h-64 md:h-70 w-full object-cover">
+                    <p>Itens marcados pela equipe da Dayse. Sem ranking inventado.</p>
+                </div>
+                <div class="highlight-rail" id="highlightRail"></div>
+            </div>
+        </section>
 
+        <section class="menu-section" id="cardapio" aria-labelledby="menuTitle">
+            <div class="section-shell menu-layout">
+                <div class="menu-intro">
+                    <p class="eyebrow eyebrow--dark">Cardápio do dia</p>
+                    <h2 id="menuTitle">Escolha sem pressa. A fome a gente resolve.</h2>
+                    <p>Os itens e a disponibilidade vêm direto da cozinha.</p>
+                    <div class="menu-legend">
+                        <span><i class="legend-dot legend-dot--open"></i> Disponível</span>
+                        <span><i class="legend-dot legend-dot--closed"></i> Indisponível</span>
+                    </div>
+                </div>
+
+                <div class="menu-content">
+                    <div class="category-nav" id="categoryNav" role="tablist" aria-label="Categorias do cardápio">
+                        <span class="category-loading">Carregando categorias...</span>
+                    </div>
+
+                    <div class="menu-feedback" id="menuFeedback" role="status" aria-live="polite">
+                        <span class="spinner" aria-hidden="true"></span>
+                        <span>Buscando o cardápio da cozinha...</span>
+                    </div>
+                    <div class="product-grid" id="productGrid" aria-busy="true"></div>
                 </div>
             </div>
         </section>
 
-        <!-- Contact Section -->
-        <section id="contato" class="py-16 bg-white">
-            <div class="container mx-auto px-4">
-                <h2 class="text-3xl font-bold text-center mb-2 text-marrom">Entre em Contato</h2>
-                <p class="text-center text-gray-600 mb-12">Estamos à disposição para atender você</p>
+        <section class="game-invite" id="jogo" aria-labelledby="gameInviteTitle">
+            <div class="game-invite__art" aria-hidden="true">
+                <img src="imagens/Feijoada%20Da%20Dayse(Logotipo).png" alt="" width="240" height="240" loading="lazy">
+            </div>
+            <div class="game-invite__copy">
+                <p class="eyebrow">Um intervalo rapidinho</p>
+                <h2 id="gameInviteTitle">Corre, Feijão!</h2>
+                <p>Pegue os feijões, desvie dos apressados e tente bater seu recorde. Funciona no teclado e no toque.</p>
+                <button class="button button--sun" type="button" data-open-game>Jogar agora</button>
+            </div>
+            <p class="game-invite__side-note">Perfeito pra espera depois do pedido.</p>
+        </section>
 
-                <div class="flex flex-col md:flex-row gap-8">
-                    <div class="md:w-1/2 bg-gray-50 p-8 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-4 text-marrom">Informações de Contato</h3>
-                        <div class="space-y-4">
-                            <div class="flex items-start">
-                                <div class="bg-caramelo p-2 rounded-full mr-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white"
-                                        viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-gray-800">Endereço</h4>
-                                    <p class="text-gray-600">R. São Sebastião, 802 - Piedade</p>
-                                    <p class="text-gray-600">Jaboatão dos Guararapes - PE</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="bg-caramelo p-2 rounded-full mr-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white"
-                                        viewBox="0 0 20 20" fill="currentColor">
-                                        <path
-                                            d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-gray-800">Telefone</h4>
-                                    <p class="text-gray-600">(81) 98748-4019</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="bg-caramelo p-2 rounded-full mr-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white"
-                                        viewBox="0 0 20 20" fill="currentColor">
-                                        <path
-                                            d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-gray-800">Email</h4>
-                                    <p class="text-gray-600">contato@feijoadadadayse.com.br</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="bg-caramelo p-2 rounded-full mr-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white"
-                                        viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-gray-800">Horário de Funcionamento</h4>
-                                    <p class="text-gray-600">Quinta a Domingo: 10h às 15h</p>
-                                </div>
-                            </div>
-                        </div>
+        <section class="rankings-section" id="rankings" aria-labelledby="rankingsTitle">
+            <div class="section-shell rankings-grid">
+                <div class="rankings-copy">
+                    <p class="eyebrow eyebrow--dark">Disputa boa, sem dados pessoais</p>
+                    <h2 id="rankingsTitle">Quem manda bem na panela?</h2>
+                    <p>Ranking semanal do Corre, Feijão! e clientes que mais voltaram no mês. Só aparece quem escolheu participar.</p>
+                    <button class="button button--red" type="button" data-open-account="rankings">Ver minha posição</button>
+                </div>
+                <div class="ranking-board">
+                    <div class="ranking-tabs" role="tablist" aria-label="Rankings públicos">
+                        <button type="button" role="tab" aria-selected="true" data-public-ranking="game_weekly">Jogo · semana</button>
+                        <button type="button" role="tab" aria-selected="false" data-public-ranking="game_all">Jogo · geral</button>
+                        <button type="button" role="tab" aria-selected="false" data-public-ranking="customers_monthly">Clientes · mês</button>
+                        <button type="button" role="tab" aria-selected="false" data-public-ranking="customers_all">Clientes · geral</button>
                     </div>
-                    <div class="md:w-1/2 bg-gray-50 p-8 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-4 text-marrom">O que dizem nossos clientes</h3>
-                        <div class="relative">
-                            <!-- Carrossel de Feedback -->
-                            <div id="feedbackCarousel" class="overflow-hidden">
-                                <div id="feedbackSlides" class="flex transition-transform duration-500">
-                                    <!-- Slide 1 -->
-                                    <div class="w-full flex-shrink-0 p-4">
-                                        <div class="bg-white rounded-lg p-6 shadow-sm">
-                                            <div class="flex items-center mb-4">
-                                                <div
-                                                    class="h-12 w-12 rounded-full bg-caramelo flex items-center justify-center text-white text-xl font-semibold">
-                                                    M
-                                                </div>
-                                                <div class="ml-4">
-                                                    <h4 class="font-medium text-gray-800">Carla Patricia</h4>
-                                                    <div class="flex text-yellow-400">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p class="text-gray-600">"A melhor feijoada que já comi! O tempero é
-                                                perfeito e o atendimento é excelente. Recomendo muito!"</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Slide 2 -->
-                                    <div class="w-full flex-shrink-0 p-4">
-                                        <div class="bg-white rounded-lg p-6 shadow-sm">
-                                            <div class="flex items-center mb-4">
-                                                <div
-                                                    class="h-12 w-12 rounded-full bg-vermelho flex items-center justify-center text-white text-xl font-semibold">
-                                                    J
-                                                </div>
-                                                <div class="ml-4">
-                                                    <h4 class="font-medium text-gray-800">Bruna Abreu</h4>
-                                                    <div class="flex text-yellow-400">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p class="text-gray-600">"Sururu e sarapatel impecáveis! Ambiente acolhedor
-                                                e preço justo. Sempre Peço!"</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Slide 3 -->
-                                    <div class="w-full flex-shrink-0 p-4">
-                                        <div class="bg-white rounded-lg p-6 shadow-sm">
-                                            <div class="flex items-center mb-4">
-                                                <div
-                                                    class="h-12 w-12 rounded-full bg-marrom flex items-center justify-center text-white text-xl font-semibold">
-                                                    A
-                                                </div>
-                                                <div class="ml-4">
-                                                    <h4 class="font-medium text-gray-800">Manuella Maria</h4>
-                                                    <div class="flex text-yellow-400">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p class="text-gray-600">"A dobradinha é sensacional! Tempero na medida
-                                                certa e atendimento muito atencioso. Vale muito a pena!"</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Botões de navegação -->
-                            <button id="prevBtn"
-                                class="absolute left-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                            <button id="nextBtn"
-                                class="absolute right-0 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-
-                            <!-- Indicadores -->
-                            <div class="flex justify-center mt-4 space-x-2">
-                                <button class="h-2 w-2 rounded-full bg-caramelo" data-slide="0"></button>
-                                <button class="h-2 w-2 rounded-full bg-gray-300" data-slide="1"></button>
-                                <button class="h-2 w-2 rounded-full bg-gray-300" data-slide="2"></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <script>
-                        // Carrossel de Feedback
-                        document.addEventListener('DOMContentLoaded', function () {
-                            const slides = document.getElementById('feedbackSlides');
-                            const prevBtn = document.getElementById('prevBtn');
-                            const nextBtn = document.getElementById('nextBtn');
-                            const indicators = document.querySelectorAll('[data-slide]');
-                            let currentSlide = 0;
-                            const totalSlides = 3;
-
-                            function updateSlidePosition() {
-                                slides.style.transform = `translateX(-${currentSlide * 100}%)`;
-
-                                // Atualiza indicadores
-                                indicators.forEach((indicator, index) => {
-                                    if (index === currentSlide) {
-                                        indicator.classList.remove('bg-gray-300');
-                                        indicator.classList.add('bg-caramelo');
-                                    } else {
-                                        indicator.classList.remove('bg-caramelo');
-                                        indicator.classList.add('bg-gray-300');
-                                    }
-                                });
-                            }
-
-                            function nextSlide() {
-                                currentSlide = (currentSlide + 1) % totalSlides;
-                                updateSlidePosition();
-                            }
-
-                            function prevSlide() {
-                                currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
-                                updateSlidePosition();
-                            }
-
-                            // Event Listeners
-                            nextBtn.addEventListener('click', nextSlide);
-                            prevBtn.addEventListener('click', prevSlide);
-
-                            // Indicadores
-                            indicators.forEach((indicator, index) => {
-                                indicator.addEventListener('click', () => {
-                                    currentSlide = index;
-                                    updateSlidePosition();
-                                });
-                            });
-
-                            // Auto-play
-                            setInterval(nextSlide, 5000);
-                        });
-                    </script>
+                    <div class="ranking-list" id="publicRankingList" aria-live="polite"><p class="empty-note">Carregando o ranking…</p></div>
                 </div>
             </div>
         </section>
 
-        <!-- Admin Panel -->
-        <section id="adminPanel" class="admin-panel py-16 bg-gray-100">
-            <div class="container mx-auto px-4">
-                <div class="bg-white p-6 rounded-lg shadow-lg">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-marrom">Painel Administrativo</h2>
-                        <button id="logoutBtn"
-                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors hidden">
-                            Sair
-                        </button>
+        <section class="story-section" id="historia" aria-labelledby="storyTitle">
+            <div class="section-shell story-grid">
+                <div class="story-photo-wrap">
+                    <img src="imagens/Feijoada.jpeg" alt="Barraca da Feijoada da Dayse em Piedade, onde a história começou" loading="lazy" width="1200" height="1600">
+                    <p class="photo-note">Piedade, onde tudo começou.</p>
+                </div>
+                <article class="story-copy">
+                    <p class="eyebrow eyebrow--dark">Receita com endereço e memória</p>
+                    <h2 id="storyTitle">Desde 7 de setembro de 2019, comida boa e conversa de balcão.</h2>
+                    <p class="story-lead">A Feijoada da Dayse nasceu em Piedade, Jaboatão dos Guararapes, com uma panela, cuidado no tempero e vontade de receber cada cliente como gente da casa.</p>
+                    <div class="story-columns">
+                        <p>O cardápio cresceu junto com a vizinhança. Além da feijoada, chegaram dobradinha, sururu, sarapatel e outros pratos tradicionais.</p>
+                        <p>De quinta a domingo, a cozinha segue no mesmo ritmo: porções honestas, acompanhamento caprichado e atendimento próximo.</p>
                     </div>
+                    <a class="text-link" href="#contato">Ver endereço e contato <span aria-hidden="true">→</span></a>
+                </article>
+            </div>
+        </section>
 
-                    <!-- Login Form -->
-                    <div id="loginForm" class="max-w-md mx-auto">
-                        <h3 class="text-xl font-semibold mb-4 text-marrom">Login Administrativo</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label for="adminEmail" class="block text-gray-700 mb-1">Email</label>
-                                <input type="email" id="adminEmail"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo">
-                            </div>
-                            <div>
-                                <label for="adminPassword" class="block text-gray-700 mb-1">Senha</label>
-                                <input type="password" id="adminPassword"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo">
-                            </div>
-                            <button id="loginBtn"
-                                class="bg-caramelo hover:bg-amber-600 text-white font-medium py-2 px-6 rounded-md transition-colors w-full">
-                                Entrar
-                            </button>
-                            <p id="loginError" class="text-red-500 text-sm hidden"></p>
+        <section class="contact-section" id="contato" aria-labelledby="contactTitle">
+            <div class="section-shell contact-grid">
+                <div>
+                    <p class="eyebrow">Chegue junto</p>
+                    <h2 id="contactTitle">A panela fica em Piedade.</h2>
+                    <p>R. São Sebastião, 802<br>Piedade · Jaboatão dos Guararapes – PE</p>
+                </div>
+                <div class="contact-actions">
+                    <a href="tel:+5581987484019"><small>Telefone e WhatsApp</small><strong>(81) 98748-4019</strong></a>
+                    <a href="https://www.instagram.com/feijoada.da.dayse/" target="_blank" rel="noopener noreferrer"><small>Instagram</small><strong>@feijoada.da.dayse</strong></a>
+                    <a href="https://www.google.com/maps/search/?api=1&query=R.%20S%C3%A3o%20Sebasti%C3%A3o%2C%20802%20Piedade%20Jaboat%C3%A3o%20dos%20Guararapes" target="_blank" rel="noopener noreferrer"><small>Como chegar</small><strong>Abrir no mapa</strong></a>
+                </div>
+                <div class="opening-card">
+                    <span class="opening-card__stamp">QUI<br>A<br>DOM</span>
+                    <div>
+                        <small>Horário da cozinha</small>
+                        <strong>10h às 15h</strong>
+                        <p>O status no alto da página informa quando os pedidos estão pausados.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="admin-section" id="admin" hidden aria-labelledby="adminTitle">
+            <div class="section-shell">
+                <div class="admin-heading">
+                    <div>
+                        <p class="eyebrow eyebrow--dark">Área restrita</p>
+                        <h2 id="adminTitle">Painel da cozinha</h2>
+                    </div>
+                    <button class="button button--quiet" id="closeAdminBtn" type="button">Fechar painel</button>
+                </div>
+
+                <div class="admin-login" id="adminLoginView">
+                    <form id="loginForm" class="admin-card" novalidate>
+                        <h3>Entrar como administrador</h3>
+                        <p>Use a conta autorizada no Firebase.</p>
+                        <label for="adminEmail">E-mail</label>
+                        <input id="adminEmail" name="email" type="email" autocomplete="username" required>
+                        <label for="adminPassword">Senha</label>
+                        <input id="adminPassword" name="password" type="password" autocomplete="current-password" required>
+                        <p class="form-message" id="loginMessage" role="alert" hidden></p>
+                        <button class="button button--red button--wide" id="loginBtn" type="submit">Entrar</button>
+                    </form>
+                </div>
+
+                <div class="admin-workspace" id="adminWorkspace" hidden>
+                    <div class="admin-toolbar">
+                        <div>
+                            <span class="admin-user" id="adminUser"></span>
+                            <strong>Produtos e funcionamento</strong>
                         </div>
+                        <div class="store-mode-control">
+                            <strong>Funcionamento da loja</strong>
+                            <div class="store-mode-actions" role="group" aria-label="Funcionamento da loja">
+                                <button type="button" data-store-mode="auto" aria-pressed="true">Automático</button>
+                                <button type="button" data-store-mode="open" aria-pressed="false">Abrir agora</button>
+                                <button type="button" data-store-mode="closed" aria-pressed="false">Pausar pedidos</button>
+                            </div>
+                            <small id="storeModeHint">Segue o horário configurado.</small>
+                        </div>
+                        <button class="button button--quiet" id="logoutBtn" type="button">Sair</button>
                     </div>
 
-                    <!-- Product Management -->
-                    <div id="productManagement" class="hidden">
-                        <div class="mb-8">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-semibold text-marrom">Adicionar Novo Item</h3>
-                                <label class="flex items-center space-x-2">
-                                    <input type="checkbox" id="toggleClosed"
-                                        class="form-checkbox h-5 w-5 text-vermelho">
-                                    <span class="text-marrom font-medium">Restaurante Fechado</span>
+                    <nav class="admin-nav" aria-label="Áreas do painel">
+                        <button type="button" aria-pressed="true" data-admin-view="overview">Visão geral</button>
+                        <button type="button" aria-pressed="false" data-admin-view="orders">Pedidos</button>
+                        <button type="button" aria-pressed="false" data-admin-view="finance">Financeiro</button>
+                        <button type="button" aria-pressed="false" data-admin-view="products">Produtos</button>
+                        <button type="button" aria-pressed="false" data-admin-view="customers">Clientes</button>
+                        <button type="button" aria-pressed="false" data-admin-view="settings">Fidelidade e jogo</button>
+                    </nav>
+
+                    <div class="admin-ops" id="adminOps">
+                        <section data-admin-panel="overview">
+                            <div class="ops-metrics" id="adminMetrics"></div>
+                            <div class="admin-card ops-feed"><div class="form-title-row"><h3>Fila de agora</h3><button class="text-button" type="button" data-admin-view-jump="orders">Abrir pedidos</button></div><div id="adminCurrentOrders"></div></div>
+                        </section>
+                        <section data-admin-panel="orders" hidden>
+                            <div class="ops-filter-row"><label class="field">Buscar pedido<input id="adminOrderSearch" type="search" placeholder="Número, cliente ou telefone"></label><label class="field">Status<select id="adminOrderFilter"><option value="all">Todos</option><option value="received">Recebidos</option><option value="confirmed">Confirmados</option><option value="preparing">Em preparo</option><option value="ready">Prontos</option><option value="out_for_delivery">Em entrega</option><option value="arrived">Entregador chegou</option><option value="delivered">Entregues</option><option value="cancelled">Cancelados</option></select></label></div>
+                            <div class="admin-order-board" id="adminOrderBoard"></div>
+                        </section>
+                        <section data-admin-panel="finance" hidden>
+                            <div class="ops-filter-row finance-filter">
+                                <label class="field">Período
+                                    <select id="adminFinancePeriod">
+                                        <option value="today">Hoje</option>
+                                        <option value="7days">Últimos 7 dias</option>
+                                        <option value="30days">Últimos 30 dias</option>
+                                        <option value="all">Todo o histórico carregado</option>
+                                    </select>
                                 </label>
                             </div>
-                            <form id="addProductForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="productName" class="block text-gray-700 mb-1">Nome do Produto</label>
-                                    <input type="text" id="productName"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo">
-                                </div>
-                                <div>
-                                    <label for="productCategory" class="block text-gray-700 mb-1">Categoria</label>
-                                    <select id="productCategory"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo">
+                            <div class="ops-metrics finance-metrics" id="adminFinanceMetrics"></div>
+                            <div class="finance-grid">
+                                <section class="admin-card"><h3>Formas de pagamento</h3><div id="adminPaymentBreakdown"></div></section>
+                                <section class="admin-card"><h3>Produtos vendidos</h3><div id="adminProductPerformance"></div></section>
+                            </div>
+                            <p class="finance-note">Entram no faturamento somente pedidos marcados como entregues. Este painel é gerencial e não substitui o fechamento fiscal ou contábil.</p>
+                        </section>
+                        <section data-admin-panel="products" hidden>
+                            <label class="field admin-product-search">Buscar produto<input id="adminProductSearch" type="search" placeholder="Nome ou categoria"></label>
+                        </section>
+                        <section data-admin-panel="customers" hidden>
+                            <label class="field admin-product-search">Buscar cliente<input id="adminCustomerSearch" type="search" placeholder="Nome, telefone ou e-mail"></label>
+                            <div class="admin-customer-list" id="adminCustomerList"></div>
+                        </section>
+                        <section data-admin-panel="settings" hidden>
+                            <form class="admin-card loyalty-settings" id="loyaltySettingsForm">
+                                <h3>Fidelidade e temporada</h3>
+                                <label class="check-field"><input id="loyaltyEnabled" type="checkbox"> Ativar Feijõezinhos</label>
+                                <label class="field">Pontos por pedido concluído<input id="loyaltyPoints" type="number" min="0" max="10000" value="10"></label>
+                                <label class="check-field"><input id="gameRankingEnabled" type="checkbox"> Ranking do jogo ativo</label>
+                                <label class="field">Nome da temporada<input id="gameSeasonName" type="text" maxlength="60" placeholder="Temporada da Feijoada"></label>
+                                <button class="button button--red" type="submit">Salvar configurações</button>
+                            </form>
+                        </section>
+                    </div>
+
+                    <div class="admin-grid" id="adminProductsPanel" hidden>
+                        <form id="productForm" class="admin-card" novalidate>
+                            <input id="productId" type="hidden">
+                            <div class="form-title-row">
+                                <h3 id="productFormTitle">Adicionar produto</h3>
+                                <button id="cancelProductEdit" class="text-button" type="button" hidden>Cancelar edição</button>
+                            </div>
+
+                            <div class="field-grid">
+                                <label class="field field--wide" for="productName">Nome
+                                    <input id="productName" type="text" required maxlength="90">
+                                </label>
+                                <label class="field" for="productCategory">Categoria
+                                    <select id="productCategory" required>
                                         <option value="comidas">Comidas</option>
                                         <option value="acompanhamentos">Acompanhamentos</option>
                                         <option value="bebidas">Bebidas</option>
                                         <option value="sobremesas">Sobremesas</option>
                                     </select>
-                                </div>
-                                <div>
-                                    <label for="productPrice" class="block text-gray-700 mb-1">Preço (R$)</label>
-                                    <input type="number" id="productPrice" step="0.01"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo">
-                                </div>
-                                <div>
-                                    <label for="productImage" class="block text-gray-700 mb-1">URL da Imagem do
-                                        Produto</label>
-                                    <input type="url" id="productImage"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo"
-                                        placeholder="https://exemplo.com/imagem.jpg">
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label for="productDescription" class="block text-gray-700 mb-1">Descrição</label>
-                                    <textarea id="productDescription" rows="3"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo"></textarea>
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" id="productAvailability" checked
-                                            class="form-checkbox h-4 w-4 text-caramelo rounded focus:ring-caramelo">
-                                        <span class="text-gray-700">Produto disponível para venda</span>
-                                    </label>
-                                </div>
-                                <div class="md:col-span-2 flex justify-end">
-                                    <button type="submit"
-                                        class="bg-vermelho hover:bg-red-800 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                                        Adicionar Item
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                                </label>
+                                <label class="field" for="productPrice">Preço
+                                    <input id="productPrice" type="number" min="0.01" step="0.01" required inputmode="decimal">
+                                </label>
+                                <label class="field field--wide" for="productImage">URL pública da foto
+                                    <input id="productImage" type="url" inputmode="url" placeholder="https://...">
+                                </label>
+                                <label class="field field--wide" for="productDescription">Descrição
+                                    <textarea id="productDescription" rows="3" maxlength="300"></textarea>
+                                </label>
+                                <label class="field" for="productBadge">Selo administrável
+                                    <select id="productBadge">
+                                        <option value="">Sem selo</option>
+                                        <option value="featured">Destaque</option>
+                                        <option value="popular">Mais pedido</option>
+                                        <option value="recommended">Recomendado</option>
+                                        <option value="new">Novidade</option>
+                                    </select>
+                                </label>
+                                <label class="check-field" for="productAvailability">
+                                    <input id="productAvailability" type="checkbox" checked>
+                                    Disponível para venda
+                                </label>
+                            </div>
+                            <p class="form-message" id="productFormMessage" role="alert" hidden></p>
+                            <button class="button button--red button--wide" id="saveProductBtn" type="submit">Salvar produto</button>
+                        </form>
 
-                        <div>
-                            <h3 class="text-xl font-semibold mb-4 text-marrom">Gerenciar Itens</h3>
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full bg-white border border-gray-200">
+                        <div class="admin-card admin-catalog">
+                            <div class="form-title-row">
+                                <h3>Produtos cadastrados</h3>
+                                <span id="adminProductCount">0 itens</span>
+                            </div>
+                            <div class="admin-table-wrap">
+                                <table>
                                     <thead>
-                                        <tr>
-                                            <th class="py-3 px-4 border-b text-left">Nome</th>
-                                            <th class="py-3 px-4 border-b text-left">Categoria</th>
-                                            <th class="py-3 px-4 border-b text-left">Preço</th>
-                                            <th class="py-3 px-4 border-b text-left">Disponível</th>
-                                            <th class="py-3 px-4 border-b text-left">Ações</th>
-                                        </tr>
+                                        <tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Status</th><th><span class="sr-only">Ações</span></th></tr>
                                     </thead>
                                     <tbody id="productTableBody">
-                                        <!-- Products will be loaded here -->
-                                        <tr>
-                                            <td colspan="5" class="py-4 px-4 text-center text-gray-500">Carregando
-                                                produtos...</td>
-                                        </tr>
+                                        <tr><td colspan="5">Carregando produtos...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -715,411 +396,268 @@
                 </div>
             </div>
         </section>
-
-        <!-- Edit Product Modal -->
-        <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-semibold text-marrom">Editar Item</h3>
-                    <button id="closeEditModal" class="text-gray-500 hover:text-gray-700" title="Fechar modal de edição"
-                        aria-label="Fechar"> <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg> </button>
-                </div>
-                <form id="editProductForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="hidden" id="editProductId">
-                    <div>
-                        <label for="editProductName" class="block text-gray-700 mb-1">Nome do Produto</label>
-                        <input type="text" id="editProductName"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo">
-                    </div>
-                    <div>
-                        <label for="editProductCategory" class="block text-gray-700 mb-1">Categoria</label>
-                        <select id="editProductCategory"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo">
-                            <option value="comidas">Comidas</option>
-                            <option value="acompanhamentos">Acompanhamentos</option>
-                            <option value="bebidas">Bebidas</option>
-                            <option value="sobremesas">Sobremesas</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="editProductPrice" class="block text-gray-700 mb-1">Preço (R$)</label>
-                        <input type="number" id="editProductPrice" step="0.01"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo">
-                    </div>
-                    <div>
-                        <label for="editProductImage" class="block text-gray-700 mb-1">URL da Imagem do Produto</label>
-                        <input type="url" id="editProductImage"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo"
-                            placeholder="https://exemplo.com/imagem.jpg">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="editProductDescription" class="block text-gray-700 mb-1">Descrição</label>
-                        <textarea id="editProductDescription" rows="3"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caramelo"></textarea>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" id="editProductAvailability"
-                                class="form-checkbox h-4 w-4 text-caramelo rounded focus:ring-caramelo">
-                            <span class="text-gray-700">Produto disponível para venda</span>
-                        </label>
-                    </div>
-                    <div class="md:col-span-2 flex justify-end space-x-3">
-                        <button type="button" id="cancelEditBtn"
-                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-6 rounded-md transition-colors">
-                            Cancelar
-                        </button>
-                        <button type="submit"
-                            class="bg-caramelo hover:bg-amber-600 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                            Salvar Alterações
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Delete Confirmation Modal -->
-        <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                <h3 class="text-xl font-semibold text-marrom mb-4">Confirmar Exclusão</h3>
-                <p class="text-gray-700 mb-6">Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.
-                </p>
-                <input type="hidden" id="deleteProductId">
-                <div class="flex justify-end space-x-3">
-                    <button id="cancelDeleteBtn"
-                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-6 rounded-md transition-colors">
-                        Cancelar
-                    </button>
-                    <button id="confirmDeleteBtn"
-                        class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-md transition-colors">
-                        Excluir
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Toast Notification -->
-        <div id="toast"
-            class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg transform transition-transform duration-300 translate-y-20 opacity-0 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586l-4.293-4.293a1 1 0 111.414-1.414L10 8.586l4.293 4.293a1 1 0 01-1.414 1.414L10 10.586z"
-                    clip-rule="evenodd" />
-            </svg>
-            <span id="toastMessage">Operação realizada com sucesso!</span>
-        </div>
     </main>
 
-    <!-- Cart Modal -->
-    <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-end z-50 hidden">
-        <div class="bg-white h-full w-full md:w-[500px] shadow-lg flex flex-col" id="cartSlider">
-            <!-- Cabeçalho do Carrinho -->
-            <div class="bg-marrom text-white p-6 shadow-md">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <h3 class="text-xl font-semibold">Seu Carrinho</h3>
-                    </div>
-                    <button id="closeCartModal" class="text-white hover:text-caramelo transition-colors"
-                        title="Fechar carrinho" aria-label="Fechar">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+    <footer class="site-footer">
+        <div class="site-footer__inner">
+            <div class="footer-brand">
+                <img src="imagens/Feijoada%20Da%20Dayse(Logotipo).png" alt="" width="86" height="86" loading="lazy">
+                <p><strong>Feijoada da Dayse</strong><span>Comida de panela em Piedade.</span></p>
             </div>
+            <nav aria-label="Rodapé">
+                <a href="#cardapio">Cardápio</a>
+                <a href="#historia">História</a>
+                <a href="#contato">Contato</a>
+                <button id="openAdminBtn" type="button">Admin</button>
+            </nav>
+            <p class="footer-credit">© <span id="currentYear"></span> Feijoada da Dayse · Site por <a href="https://www.instagram.com/cecwebdigital/" target="_blank" rel="noopener noreferrer">C&amp;C</a></p>
+        </div>
+    </footer>
 
-            <!-- Área de Rolagem dos Itens -->
-            <div class="flex-1 overflow-y-auto bg-gray-50">
-                <div id="cartItems" class="p-6 space-y-4">
-                    <!-- Cart items will be loaded here -->
+    <nav class="mobile-dock" aria-label="Atalhos">
+        <a href="#inicio"><span aria-hidden="true">⌂</span>Início</a>
+        <a href="#cardapio"><span aria-hidden="true">≡</span>Cardápio</a>
+        <button type="button" data-open-game><span aria-hidden="true">◆</span>Jogo</button>
+        <button type="button" data-open-account="overview"><span aria-hidden="true">●</span>Conta</button>
+        <button type="button" data-open-cart aria-label="Abrir sacola, 0 itens"><span aria-hidden="true">♨</span>Sacola <b data-cart-count>0</b></button>
+    </nav>
+
+    <div class="overlay" id="authDialog" hidden>
+        <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle" tabindex="-1">
+            <button class="icon-button dialog-close" data-close-auth type="button" aria-label="Fechar">×</button>
+            <p class="eyebrow eyebrow--dark">Sua mesa por aqui</p>
+            <h2 id="authTitle">Entre para acompanhar tudo</h2>
+            <p>Comprar como visitante continua livre. A conta salva favoritos, endereços, pedidos e ranking.</p>
+            <div class="auth-tabs" role="tablist"><button type="button" role="tab" aria-selected="true" data-auth-mode="login">Entrar</button><button type="button" role="tab" aria-selected="false" data-auth-mode="signup">Criar conta</button></div>
+            <form id="customerAuthForm" novalidate>
+                <label class="field" id="authNameField" hidden>Nome<input id="authName" type="text" autocomplete="name" maxlength="80"></label>
+                <label class="field" id="authPhoneField" hidden>Telefone<input id="authPhone" type="tel" autocomplete="tel" maxlength="24"></label>
+                <label class="field">E-mail<input id="authEmail" type="email" autocomplete="email" required></label>
+                <label class="field" id="authPasswordField">Senha<input id="authPassword" type="password" autocomplete="current-password" minlength="6" required></label>
+                <p class="form-message" id="authMessage" role="alert" hidden></p>
+                <button class="button button--red button--wide" id="authSubmitBtn" type="submit">Entrar</button>
+            </form>
+            <button class="button button--google button--wide" id="googleLoginBtn" type="button">Entrar com Google</button>
+            <button class="text-button auth-reset" id="resetPasswordBtn" type="button">Esqueci minha senha</button>
+        </section>
+    </div>
+
+    <div class="overlay overlay--right" id="accountDrawer" hidden>
+        <section class="account-drawer" role="dialog" aria-modal="true" aria-labelledby="accountTitle" tabindex="-1">
+            <header class="drawer-header"><div><p class="eyebrow">Feito pra quem volta</p><h2 id="accountTitle">Minha Conta</h2></div><button class="icon-button" data-close-account type="button" aria-label="Fechar Minha Conta">×</button></header>
+            <nav class="account-tabs" aria-label="Minha Conta"><button data-account-view="overview" aria-pressed="true">Resumo</button><button data-account-view="deliveries" aria-pressed="false" data-courier-only hidden>Entregas</button><button data-account-view="orders" aria-pressed="false">Pedidos</button><button data-account-view="favorites" aria-pressed="false">Favoritos</button><button data-account-view="addresses" aria-pressed="false">Endereços</button><button data-account-view="rankings" aria-pressed="false">Rankings</button><button data-account-view="preferences" aria-pressed="false">Preferências</button></nav>
+            <div class="account-scroll" id="accountContent"></div>
+        </section>
+    </div>
+
+    <div class="overlay overlay--right" id="notificationDrawer" hidden>
+        <section class="notification-drawer" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" tabindex="-1">
+            <header class="drawer-header"><div><p class="eyebrow">Da cozinha pra você</p><h2 id="notificationTitle">Notificações</h2></div><button class="icon-button" data-close-notifications type="button" aria-label="Fechar notificações">×</button></header>
+            <button class="text-button notification-read-all" id="readAllNotificationsBtn" type="button">Marcar todas como lidas</button>
+            <div class="notification-list" id="notificationList"></div>
+        </section>
+    </div>
+
+    <div class="overlay" id="orderTrackingDialog" hidden>
+        <section class="tracking-dialog" role="dialog" aria-modal="true" aria-labelledby="trackingTitle" tabindex="-1">
+            <button class="icon-button dialog-close" data-close-tracking type="button" aria-label="Fechar acompanhamento">×</button>
+            <div id="trackingContent"></div>
+        </section>
+    </div>
+
+    <div class="overlay" id="productDialog" hidden>
+        <section class="product-dialog" role="dialog" aria-modal="true" aria-labelledby="productDialogTitle" tabindex="-1">
+            <button class="icon-button dialog-close" id="closeProductDialog" type="button" aria-label="Fechar detalhes">×</button>
+            <div class="product-dialog__image">
+                <img id="productDialogImage" alt="" width="720" height="720">
+                <div class="image-fallback" id="productDialogFallback" hidden><span>♨</span><small>Foto chegando</small></div>
+            </div>
+            <div class="product-dialog__copy">
+                <p class="product-category" id="productDialogCategory"></p>
+                <h2 id="productDialogTitle"></h2>
+                <p id="productDialogDescription"></p>
+                <div class="dialog-price-row">
+                    <strong id="productDialogPrice"></strong>
+                    <span id="productDialogAvailability"></span>
                 </div>
+                <div class="add-row">
+                    <div class="quantity-control" aria-label="Quantidade">
+                        <button id="productQtyMinus" type="button" aria-label="Diminuir quantidade">−</button>
+                        <output id="productQty" aria-live="polite">1</output>
+                        <button id="productQtyPlus" type="button" aria-label="Aumentar quantidade">+</button>
+                    </div>
+                    <button class="button button--red" id="confirmAddProduct" type="button">Adicionar à sacola</button>
+                </div>
+                <p class="dialog-note" id="productDialogNote"></p>
+            </div>
+        </section>
+    </div>
 
-                <form id="orderForm" class="p-6 space-y-6">
-                    <div class="space-y-4">
-                        <div>
-                            <label for="customerName" class="block text-gray-700 mb-2 font-medium">Nome
-                                Completo*</label>
-                            <input type="text" id="customerName" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramelo focus:border-transparent transition-all">
+    <div class="overlay overlay--right" id="cartDrawer" hidden>
+        <section class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cartTitle" tabindex="-1">
+            <header class="drawer-header">
+                <div>
+                    <p class="eyebrow">Seu pedido</p>
+                    <h2 id="cartTitle">Sacola da feijoada</h2>
+                </div>
+                <button class="icon-button" id="closeCartBtn" type="button" aria-label="Fechar sacola">×</button>
+            </header>
+
+            <div class="drawer-scroll">
+                <div class="cart-items" id="cartItems"></div>
+
+                <form id="orderForm" class="checkout" novalidate>
+                    <fieldset>
+                        <legend><span>1</span> Para quem vai o pedido?</legend>
+                        <div class="field-grid">
+                            <label class="field" for="customerName">Nome
+                                <input id="customerName" name="name" type="text" autocomplete="name" required maxlength="80">
+                            </label>
+                            <label class="field" for="customerPhone">Telefone
+                                <input id="customerPhone" name="phone" type="tel" autocomplete="tel" required inputmode="tel" placeholder="(81) 99999-9999">
+                            </label>
                         </div>
-                        <div>
-                            <label for="customerPhone" class="block text-gray-700 mb-2 font-medium">Telefone*</label>
-                            <input type="tel" id="customerPhone" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramelo focus:border-transparent transition-all">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend><span>2</span> Onde vamos entregar?</legend>
+                        <div class="cep-row">
+                            <label class="field" for="customerCep">CEP
+                                <input id="customerCep" name="postal-code" type="text" autocomplete="postal-code" required inputmode="numeric" maxlength="10" placeholder="00.000-000">
+                            </label>
+                            <button class="button button--quiet" id="searchCepBtn" type="button">Buscar CEP</button>
                         </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label for="customerCep" class="block text-gray-700 mb-2 font-medium">CEP*</label>
-                                <div class="flex gap-2">
-                                    <div class="flex-1">
-                                        <input type="text" id="customerCep" required maxlength="10"
-                                            placeholder="XX.XXX-XXX"
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramelo focus:border-transparent transition-all">
-                                    </div>
-                                    <button type="button" id="searchCepBtn"
-                                        class="bg-caramelo hover:bg-amber-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center min-w-[100px] flex-shrink-0">
-                                        <span class="hidden" id="searchCepBtnLoader">
-                                            <div class="loader w-5 h-5 border-2"></div>
-                                        </span>
-                                        <span id="searchCepBtnText">Buscar</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div>
-                                <label for="customerNumber" class="block text-gray-700 mb-2 font-medium">Número*</label>
-                                <input type="text" id="customerNumber" required
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramelo focus:border-transparent transition-all">
-                            </div>
+                        <p class="address-status" id="addressStatus" role="status"></p>
+                        <div class="field-grid">
+                            <label class="field field--wide" for="customerStreet">Rua
+                                <input id="customerStreet" name="address-line1" type="text" autocomplete="address-line1" required maxlength="120">
+                            </label>
+                            <label class="field" for="customerNumber">Número
+                                <input id="customerNumber" name="address-line2" type="text" required maxlength="20">
+                            </label>
+                            <label class="field" for="customerNeighborhood">Bairro
+                                <input id="customerNeighborhood" type="text" required maxlength="80">
+                            </label>
+                            <label class="field field--wide" for="customerCity">Cidade / UF
+                                <input id="customerCity" type="text" required maxlength="100">
+                            </label>
                         </div>
-                        <div>
-                            <label for="customerStreet" class="block text-gray-700 mb-2 font-medium">Rua</label>
-                            <input type="text" id="customerStreet" readonly
-                                class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="customerNeighborhood"
-                                    class="block text-gray-700 mb-2 font-medium">Bairro</label>
-                                <input type="text" id="customerNeighborhood" readonly
-                                    class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600">
-                            </div>
-                            <div>
-                                <label for="customerCity" class="block text-gray-700 mb-2 font-medium">Cidade</label>
-                                <input type="text" id="customerCity" readonly
-                                    class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600">
-                            </div>
-                        </div>
-                        <input type="hidden" id="deliveryAddress">
-                        <div>
-                            <label for="orderNotes" class="block text-gray-700 mb-2 font-medium">Observações</label>
-                            <textarea id="orderNotes" rows="3"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramelo focus:border-transparent transition-all resize-none"></textarea>
-                        </div>
-                        <div>
-                            <label for="paymentMethod" class="block text-gray-700 mb-2 font-medium">Forma de
-                                Pagamento*</label>
-                            <select id="paymentMethod" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramelo focus:border-transparent transition-all appearance-none bg-white">
-                                <option value="" disabled selected>Selecione uma opção</option>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend><span>3</span> Pagamento e recado</legend>
+                        <label class="field" for="paymentMethod">Forma de pagamento
+                            <select id="paymentMethod" required>
+                                <option value="">Selecione</option>
                                 <option value="Pix">Pix</option>
                                 <option value="Dinheiro">Dinheiro</option>
-                                <option value="Cartão de Crédito">Cartão de Crédito </option>
-                                <option value="Cartão de Débito">Cartão de Débito </option>
+                                <option value="Cartão de Crédito">Cartão de crédito</option>
+                                <option value="Cartão de Débito">Cartão de débito</option>
                             </select>
-                        </div>
+                        </label>
+                        <label class="field" id="changeField" for="changeAmount" hidden>Troco para quanto?
+                            <input id="changeAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="R$ 0,00">
+                        </label>
+                        <p class="fee-note" id="cardFeeNote" hidden>O cartão acrescenta a taxa informada no resumo.</p>
+                        <label class="field" for="orderNotes">Observações
+                            <textarea id="orderNotes" rows="3" maxlength="300" placeholder="Ex.: retirar um acompanhamento"></textarea>
+                        </label>
+                    </fieldset>
 
-                        <!-- Campo de Troco - Inicialmente escondido -->
-                        <div id="changeField" class="hidden">
-                            <label for="changeAmount" class="block text-gray-700 mb-2 font-medium">Troco para
-                                quanto?</label>
-                            <div class="relative">
-                                <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">R$</span>
-                                <input type="number" id="changeAmount" step="0.01" min="0"
-                                    class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramelo focus:border-transparent transition-all"
-                                    placeholder="0,00">
-                            </div>
-                        </div>
-
-                        <!-- Aviso de Taxa de Cartão - Inicialmente escondido -->
-                        <div id="cardFeeWarning"
-                            class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
-                            <div class="flex items-start">
-                                <svg class="h-5 w-5 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p class="text-sm">Uma taxa adicional será aplicada para pagamento com cartão.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Script para controlar a exibição dos campos adicionais -->
-                    <script>
-                        document.getElementById('paymentMethod').addEventListener('change', function (e) {
-                            const changeField = document.getElementById('changeField');
-                            const cardFeeWarning = document.getElementById('cardFeeWarning');
-                            const method = e.target.value;
-
-                            // Esconde ambos inicialmente
-                            changeField.classList.add('hidden');
-                            cardFeeWarning.classList.add('hidden');
-
-                            // Mostra o campo apropriado baseado no método selecionado
-                            if (method === 'Dinheiro') {
-                                changeField.classList.remove('hidden');
-                            } else if (method === 'Cartão de Crédito' || method === 'Cartão de Débito') {
-                                cardFeeWarning.classList.remove('hidden');
-                            }
-
-                            // Atualiza os totais para refletir a taxa do cartão
-                            updateTotals();
-                        });
-
-                        // Remove a validação antiga do valor do troco
-                        document.getElementById('changeAmount').addEventListener('input', function (e) {
-                            const value = parseFloat(e.target.value) || 0;
-                            if (value < 0) {
-                                e.target.value = 0;
-                            }
-                        });
-                    </script>
-
-                    <!-- Resumo do Pedido -->
-                    <div class="mt-8 pt-6 border-t border-gray-200">
-                        <h4 class="text-lg font-semibold text-marrom mb-4">Resumo do Pedido</h4>
-                        <div class="bg-white rounded-lg p-4 shadow-sm space-y-3">
-                            <div class="flex justify-between items-center text-gray-600">
-                                <span>Subtotal:</span>
-                                <span id="subtotal" class="font-medium">R$ 0,00</span>
-                            </div>
-                            <div class="flex justify-between items-center text-gray-600">
-                                <div class="flex items-center">
-                                    <span>Taxa de Entrega</span>
-                                    <span id="distance" class="ml-2 text-sm text-gray-500">(0 km)</span>
-                                </div>
-                                <span id="deliveryFee" class="font-medium">R$ 0,00</span>
-                            </div>
-                            <div id="paymentFeeContainer"
-                                class="flex justify-between items-center text-gray-600 hidden">
-                                <span>Taxa de Pagamento:</span>
-                                <span id="paymentFee" class="font-medium">R$ 0,00</span>
-                            </div>
-                            <div
-                                class="flex justify-between items-center text-xl font-semibold text-marrom pt-3 border-t border-gray-200">
-                                <span>Total:</span>
-                                <span id="cartTotal">R$ 0,00</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end space-x-3 pt-4">
-                        <button type="button" id="clearCartBtn"
-                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
-                                fill="currentColor">
-                                <path fill-rule="evenodd"
-                                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            Limpar
-                        </button>
-                        <button type="submit" id="submitOrderBtn"
-                            class="bg-vermelho hover:bg-red-800 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
-                                fill="currentColor">
-                                <path fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            Finalizar
-                        </button>
-                    </div>
+                    <p class="form-message" id="checkoutMessage" role="alert" hidden></p>
                 </form>
             </div>
-        </div>
+
+            <footer class="cart-summary">
+                <dl>
+                    <div><dt>Subtotal</dt><dd id="subtotal">R$ 0,00</dd></div>
+                    <div><dt>Entrega <small id="deliveryDistance"></small></dt><dd id="deliveryFee">—</dd></div>
+                    <div id="paymentFeeRow" hidden><dt>Taxa do cartão</dt><dd id="paymentFee">R$ 0,00</dd></div>
+                    <div class="total-row"><dt>Total</dt><dd id="cartTotal">R$ 0,00</dd></div>
+                </dl>
+                <div class="summary-actions">
+                    <button class="text-button" id="clearCartBtn" type="button">Esvaziar sacola</button>
+                    <button class="button button--red" id="submitOrderBtn" type="submit" form="orderForm">Enviar pedido para a cozinha</button>
+                </div>
+                <p class="handoff-note">O pedido entra direto na fila da cozinha. O WhatsApp fica disponível apenas para suporte.</p>
+            </footer>
+        </section>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-marrom text-white py-8">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between">
-                <div class="mb-6 md:mb-0">
-                    <h3 class="text-xl font-bold mb-3">Feijoada da Dayse</h3>
-                    <p class="text-gray-300 max-w-xs">Sabor que conquista. A melhor feijoada da região, feita com
-                        ingredientes selecionados e muito amor.</p>
-                </div>
-                <div class="mb-6 md:mb-0">
-                    <h4 class="text-lg font-semibold mb-3">Links Rápidos</h4>
-                    <ul class="space-y-2">
-                        <li><a href="#inicio" class="text-gray-300 hover:text-caramelo transition-colors">Início</a>
-                        </li>
-                        <li><a href="#cardapio" class="text-gray-300 hover:text-caramelo transition-colors">Cardápio</a>
-                        </li>
-                        <li><a href="#sobre" class="text-gray-300 hover:text-caramelo transition-colors">Sobre</a></li>
-                        <li><a href="#contato" class="text-gray-300 hover:text-caramelo transition-colors">Contato</a>
-                        </li>
-                    </ul>
-                </div>
+    <div class="overlay" id="confirmDialog" hidden>
+        <section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText" tabindex="-1">
+            <p class="eyebrow eyebrow--dark">Só pra confirmar</p>
+            <h2 id="confirmTitle">Continuar?</h2>
+            <p id="confirmText"></p>
+            <div class="confirm-actions">
+                <button class="button button--quiet" id="cancelConfirmBtn" type="button">Cancelar</button>
+                <button class="button button--red" id="acceptConfirmBtn" type="button">Confirmar</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="overlay" id="orderHandoffDialog" hidden>
+        <section class="order-handoff" role="dialog" aria-modal="true" aria-labelledby="orderHandoffTitle" tabindex="-1">
+            <button class="icon-button dialog-close" id="closeOrderHandoff" type="button" aria-label="Fechar">×</button>
+            <span class="handoff-pan" aria-hidden="true">♨</span>
+            <p class="eyebrow eyebrow--dark">Pedido registrado</p>
+            <h2 id="orderHandoffTitle">Seu pedido chegou à cozinha.</h2>
+            <p id="orderHandoffText">Aguarde a confirmação do restaurante e acompanhe cada etapa por aqui.</p>
+            <a class="button button--quiet button--wide" id="whatsAppOrderLink" href="#" target="_blank" rel="noopener noreferrer">Falar sobre este pedido no WhatsApp</a>
+            <button class="button button--quiet button--wide" id="confirmOrderSentBtn" type="button">Continuar no cardápio</button>
+            <button class="button button--quiet button--wide" id="handoffTrackOrderBtn" type="button" hidden>Acompanhar este pedido</button>
+            <div class="after-order-game" id="afterOrderGame" hidden>
+                <strong>Enquanto sua feijoada não chega, bora bater um recorde?</strong>
+                <button class="button button--sun" type="button" data-open-game>Jogar Corre, Feijão!</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="overlay game-overlay" id="gameDialog" hidden>
+        <section class="game-dialog" role="dialog" aria-modal="true" aria-labelledby="gameTitle" tabindex="-1">
+            <header class="game-header">
                 <div>
-                    <h4 class="text-lg font-semibold mb-3">Redes Sociais</h4>
-                    <div class="flex space-x-4">
-                        <path
-                            d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
-                        </svg> </a> <a href="https://www.instagram.com/feijoada.da.dayse/" target="_blank"
-                            rel="noopener noreferrer" title="Siga-nos no Instagram" ...
-                            class="bg-caramelo hover:bg-amber-600 h-10 w-10 rounded-full flex items-center justify-center transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="currentColor"
-                                viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                            </svg> </a> <a
-                            href="https://wa.me/5581987484019?text=Ol%C3%A1!%20Gostaria%20de%20mais%20informa%C3%A7%C3%B5es%2C%20por%20favor."
-                            target="_blank" rel="noopener noreferrer" title="Fale conosco no WhatsApp"
-                            aria-label="WhatsApp"
-                            class="bg-caramelo hover:bg-amber-600 h-10 w-10 rounded-full flex items-center justify-center transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="currentColor"
-                                viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                    d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
-                            </svg> </a>
-                    </div>
+                    <p class="eyebrow">Arcade da cozinha</p>
+                    <h2 id="gameTitle">Corre, Feijão!</h2>
                 </div>
-                <footer class="bg-marrom text-white py-4">
-                    <div class="container mx-auto px-4">
-                        <div class="flex justify-center items-center gap-6">
-                            <span class="font-medium">Aceitamos:</span>
-                            <img src="https://logodownload.org/wp-content/uploads/2020/02/pix-bc-logo.png" alt="PIX"
-                                class="h-6">
-                            <img src="https://logodownload.org/wp-content/uploads/2014/07/mastercard-logo-1.png"
-                                alt="Mastercard" class="h-6">
-                            <img src="https://logodownload.org/wp-content/uploads/2016/10/visa-logo-1.png" alt="Visa"
-                                class="h-6">
-                            <img src="https://logodownload.org/wp-content/uploads/2017/04/elo-logo-0.png" alt="Elo"
-                                class="h-6">
-                        </div>
-                    </div>
-                </footer>
-</body>
+                <div class="game-scoreboard">
+                    <span>Pontos <strong id="gameScore">0</strong></span>
+                    <span>Recorde <strong id="gameBest">0</strong></span>
+                    <span class="game-combo" id="gameCombo">Combo ×1</span>
+                    <span class="game-power" id="gamePower">Sem power-up</span>
+                </div>
+                <button class="icon-button" id="closeGameBtn" type="button" aria-label="Fechar jogo">×</button>
+            </header>
 
-</html>
-<div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400 text-sm">
-    <p>&copy; 2025 Feijoada da Dayse. Todos os direitos reservados.</p>
-    <p>Site criado por <a href="https://www.instagram.com/cecwebdigital/" target="_blank" rel="noopener noreferrer"
-            class="text-caramelo hover:underline">C&amp;C</a>.</p>
-</div>
+            <div class="game-stage-wrap">
+                <canvas id="gameCanvas" width="720" height="440" role="img" aria-label="Jogo Corre, Feijão: mova a panelinha, pegue feijões e desvie dos obstáculos"></canvas>
+                <div class="game-start-card" id="gameStartCard">
+                    <span class="game-start-bean" aria-hidden="true"></span>
+                    <h3 id="gameStateTitle">Panela no fogo?</h3>
+                    <p id="gameStateText">Use as setas ou WASD. No celular, segure os botões.</p>
+                    <button class="button button--sun" id="startGameBtn" type="button">Começar</button>
+                </div>
+                <p class="sr-only" id="gameAnnouncement" aria-live="polite"></p>
+            </div>
 
-</footer>
-
-<!-- Botão Flutuante do Carrinho -->
-<button id="floatingCartBtn"
-    class="fixed bottom-6 right-6 bg-vermelho hover:bg-red-800 text-white rounded-full p-4 shadow-lg flex items-center justify-center transition-all transform hover:scale-105 z-[60]">
-    <div class="relative">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-        <span id="floatingCartItemCount"
-            class="absolute -top-2 -right-2 bg-caramelo text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            <div class="game-controls" aria-label="Controles por toque">
+                <span></span>
+                <button type="button" data-direction="up" aria-label="Mover para cima">↑</button>
+                <span></span>
+                <button type="button" data-direction="left" aria-label="Mover para esquerda">←</button>
+                <button type="button" data-direction="down" aria-label="Mover para baixo">↓</button>
+                <button type="button" data-direction="right" aria-label="Mover para direita">→</button>
+            </div>
+            <div class="game-footer">
+                <p>Faça combos, pegue a Farofa Dourada e use o escudo da panela.</p>
+                <div><button class="text-button" id="gameSoundBtn" type="button" aria-pressed="true">Som ligado</button><button class="text-button" id="pauseGameBtn" type="button">Pausar</button></div>
+            </div>
+        </section>
     </div>
-</button>
 
-<!-- AVISO DE RESTAURANTE FECHADO -->
-<div id="closedBanner" class="hidden bg-red-600 text-white text-center py-4 text-lg font-bold">Restaurante fechado no
-    momento. Não estamos aceitando pedidos.</div>
-
-
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <span class="toast__mark" aria-hidden="true">✓</span>
+        <span id="toastMessage"></span>
+    </div>
 </body>
-
-
 </html>

@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    { "collectionGroup": "gameScores", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "weekKey", "order": "ASCENDING" },
+      { "fieldPath": "bestWeekly", "order": "DESCENDING" }
+    ]},
+    { "collectionGroup": "customerStats", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "monthKey", "order": "ASCENDING" },
+      { "fieldPath": "monthlyOrders", "order": "DESCENDING" }
+    ]}
+  ],
+  "fieldOverrides": []
+}

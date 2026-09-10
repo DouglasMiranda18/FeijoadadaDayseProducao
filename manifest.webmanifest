@@ -1,0 +1,14 @@
+{
+  "name": "Feijoada da Dayse",
+  "short_name": "Dayse",
+  "description": "Cardápio, pedidos e acompanhamento da Feijoada da Dayse.",
+  "lang": "pt-BR",
+  "start_url": "./Index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#681f26",
+  "icons": [
+    { "src": "imagens/Feijoada%20Da%20Dayse(Logotipo).png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

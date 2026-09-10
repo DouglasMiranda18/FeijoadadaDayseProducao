@@ -1,0 +1,8 @@
+node_modules/
+.npm-cache/
+.firebase/
+firebase-debug.log
+*-debug.log
+.env
+.env.*
+*firebase-adminsdk*.json
