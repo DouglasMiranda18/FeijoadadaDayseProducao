@@ -33,6 +33,12 @@ test('admin pode escolher funcionamento automático, aberto ou fechado', () => {
     assert.match(html, /data-store-mode="closed"[^>]*>Pausar pedidos/);
 });
 
+test('admin tem acesso no cabeçalho e financeiro detalhado', () => {
+    assert.match(html, /id="adminHeaderBtn"/);
+    assert.match(html, /id="adminCourierPerformance"/);
+    assert.match(html, /id="adminDailyPerformance"/);
+});
+
 test('assets locais referenciados pelo HTML existem', async () => {
     const references = [...html.matchAll(/(?:href|src)="([^"#]+)"/g)]
         .map((match) => match[1])

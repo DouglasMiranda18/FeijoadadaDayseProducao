@@ -9,8 +9,8 @@ import {
     statusLabel,
     unreadCount,
     validNextStatuses
-} from './account-core.mjs?v=2.3.0';
-import { formatPhone, money, normalizeText } from './core.mjs?v=2.3.0';
+} from './account-core.mjs?v=2.4.0';
+import { formatPhone, money, normalizeText } from './core.mjs?v=2.4.0';
 
 const VAPID_KEY = document.querySelector('meta[name="firebase-vapid-key"]')?.content.trim() || '';
 
@@ -42,7 +42,7 @@ export function initCustomerExperience(api) {
         publicRankingList: document.querySelector('#publicRankingList'),
         adminOps: document.querySelector('#adminOps'), adminProductsPanel: document.querySelector('#adminProductsPanel'), adminMetrics: document.querySelector('#adminMetrics'), adminCurrentOrders: document.querySelector('#adminCurrentOrders'), adminOrderBoard: document.querySelector('#adminOrderBoard'), adminOrderSearch: document.querySelector('#adminOrderSearch'), adminOrderFilter: document.querySelector('#adminOrderFilter'), adminCustomerList: document.querySelector('#adminCustomerList'), adminCustomerSearch: document.querySelector('#adminCustomerSearch'), adminProductSearch: document.querySelector('#adminProductSearch'),
         loyaltyForm: document.querySelector('#loyaltySettingsForm'), loyaltyEnabled: document.querySelector('#loyaltyEnabled'), loyaltyPoints: document.querySelector('#loyaltyPoints'), gameRankingEnabled: document.querySelector('#gameRankingEnabled'), gameSeasonName: document.querySelector('#gameSeasonName'),
-        financePeriod: document.querySelector('#adminFinancePeriod'), financeMetrics: document.querySelector('#adminFinanceMetrics'), paymentBreakdown: document.querySelector('#adminPaymentBreakdown'), productPerformance: document.querySelector('#adminProductPerformance')
+        financePeriod: document.querySelector('#adminFinancePeriod'), financeMetrics: document.querySelector('#adminFinanceMetrics'), paymentBreakdown: document.querySelector('#adminPaymentBreakdown'), productPerformance: document.querySelector('#adminProductPerformance'), courierPerformance: document.querySelector('#adminCourierPerformance'), dailyPerformance: document.querySelector('#adminDailyPerformance')
     };
 
     const state = {
@@ -471,6 +471,14 @@ export function initCustomerExperience(api) {
 
     function adminOrderCard(order) {
         const card = createOrderCard(order, true); card.classList.add('admin-order-card');
+        if (order.fulfillment !== 'pickup') {
+            const courierProfile = state.customers.find((customer) => customer.id === order.courierId);
+            const courierName = order.courier?.name || courierProfile?.displayName || courierProfile?.publicName || courierProfile?.email || '';
+            const courierText = courierName
+                ? (order.status === 'delivered' ? `Entrega feita por ${courierName}` : `Entregador: ${courierName}`)
+                : 'Entregador ainda não atribuído';
+            card.append(el('p', `order-card__courier${courierName ? '' : ' is-pending'}`, courierText));
+        }
         if (order.fulfillment !== 'pickup' && !['delivered', 'cancelled'].includes(order.status)) {
             const couriers = state.customers.filter((customer) => customer.isCourier === true);
             const assignment = el('label', 'courier-assignment', 'Entregador'); const select = el('select'); select.dataset.assignCourier = order.id;
@@ -509,13 +517,28 @@ export function initCustomerExperience(api) {
 
     function renderFinance() {
         const summary = financialSummary(state.adminOrders, financeRange(dom.financePeriod.value));
-        dom.financeMetrics.replaceChildren(metric('Faturamento', money(summary.revenue), 'is-done'), metric('Pedidos entregues', summary.orders), metric('Ticket médio', money(summary.averageTicket)), metric('Taxas de entrega', money(summary.deliveryFees), 'is-delivery'));
+        dom.financeMetrics.replaceChildren(
+            metric('Faturamento total', money(summary.revenue), 'is-done'),
+            metric('Vendas de produtos', money(summary.productSales)),
+            metric('Taxas de entrega', money(summary.deliveryFees), 'is-delivery'),
+            metric('Taxas de cartão', money(summary.paymentFees)),
+            metric('Pedidos entregues', summary.orders),
+            metric('Itens vendidos', summary.itemsSold),
+            metric('Ticket médio', money(summary.averageTicket)),
+            metric('Cancelados', summary.cancelledOrders, summary.cancelledOrders ? 'is-waiting' : '')
+        );
         dom.paymentBreakdown.replaceChildren();
         if (!summary.payments.length) dom.paymentBreakdown.append(el('p', 'empty-note', 'Nenhum pedido entregue neste período.'));
         summary.payments.forEach((item) => dom.paymentBreakdown.append(financeRow(item.method, `${item.orders} pedido(s)`, money(item.total))));
         dom.productPerformance.replaceChildren();
         if (!summary.products.length) dom.productPerformance.append(el('p', 'empty-note', 'As vendas dos produtos aparecerão aqui.'));
         summary.products.slice(0, 10).forEach((item) => dom.productPerformance.append(financeRow(item.name, `${item.quantity} unidade(s)`, money(item.total))));
+        dom.courierPerformance.replaceChildren();
+        if (!summary.couriers.length) dom.courierPerformance.append(el('p', 'empty-note', 'As entregas concluídas por entregador aparecerão aqui.'));
+        summary.couriers.forEach((item) => dom.courierPerformance.append(financeRow(item.name, `${item.orders} entrega(s)`, money(item.total))));
+        dom.dailyPerformance.replaceChildren();
+        if (!summary.days.length) dom.dailyPerformance.append(el('p', 'empty-note', 'Nenhum movimento neste período.'));
+        summary.days.slice(0, 14).forEach((item) => dom.dailyPerformance.append(financeRow(item.label, `${item.orders} pedido(s) · ${item.items} item(ns)`, money(item.total))));
     }
 
     function switchAdminView(view) {

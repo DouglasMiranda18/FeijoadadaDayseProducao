@@ -24,7 +24,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js" defer></script>
-    <script type="module" src="js/app.mjs?v=2.3.0"></script>
+    <script type="module" src="js/app.mjs?v=2.4.0"></script>
 </head>
 <body>
     <a class="skip-link" href="#cardapio">Pular para o cardápio</a>
@@ -51,6 +51,9 @@
                 </div>
                 <button class="header-icon-button" id="notificationBtn" type="button" aria-label="Abrir notificações" hidden>
                     <span aria-hidden="true">●</span><b id="notificationCount" hidden>0</b>
+                </button>
+                <button class="admin-header-trigger" id="adminHeaderBtn" type="button" hidden>
+                    <span aria-hidden="true">⚙</span><span>Painel</span>
                 </button>
                 <button class="account-trigger" id="accountBtn" type="button" aria-label="Abrir Minha Conta">
                     <span class="account-avatar" id="accountAvatar" aria-hidden="true">D</span>
@@ -307,6 +310,8 @@
                             <div class="finance-grid">
                                 <section class="admin-card"><h3>Formas de pagamento</h3><div id="adminPaymentBreakdown"></div></section>
                                 <section class="admin-card"><h3>Produtos vendidos</h3><div id="adminProductPerformance"></div></section>
+                                <section class="admin-card"><h3>Entregadores</h3><div id="adminCourierPerformance"></div></section>
+                                <section class="admin-card"><h3>Movimento por dia</h3><div id="adminDailyPerformance"></div></section>
                             </div>
                             <p class="finance-note">Entram no faturamento somente pedidos marcados como entregues. Este painel é gerencial e não substitui o fechamento fiscal ou contábil.</p>
                         </section>

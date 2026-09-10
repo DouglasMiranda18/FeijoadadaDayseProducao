@@ -20,8 +20,8 @@ import {
     paymentFee,
     reconcileCart,
     sortProducts
-} from './core.mjs?v=2.3.0';
-import { initCustomerExperience } from './customer.mjs?v=2.3.0';
+} from './core.mjs?v=2.4.0';
+import { initCustomerExperience } from './customer.mjs?v=2.4.0';
 
 const WHATSAPP_NUMBER = '5581987484019';
 const CART_STORAGE_KEY = 'feijoada-dayse-cart-v2';
@@ -104,6 +104,7 @@ const dom = {
     toastMessage: document.querySelector('#toastMessage'),
     adminSection: document.querySelector('#admin'),
     openAdminBtn: document.querySelector('#openAdminBtn'),
+    adminHeaderBtn: document.querySelector('#adminHeaderBtn'),
     closeAdminBtn: document.querySelector('#closeAdminBtn'),
     adminLoginView: document.querySelector('#adminLoginView'),
     adminWorkspace: document.querySelector('#adminWorkspace'),
@@ -942,6 +943,7 @@ function setAdminAuthView(context = {}) {
     dom.adminLoginView.hidden = isAdmin;
     dom.adminWorkspace.hidden = !isAdmin;
     dom.adminUser.textContent = isAdmin ? user?.email || '' : '';
+    dom.adminHeaderBtn.hidden = !isAdmin;
     if (user && !isAdmin) setFormMessage(dom.loginMessage, 'Esta é uma conta de cliente. Use uma conta com permissão administrativa.');
     else if (!user) setFormMessage(dom.loginMessage);
     if (!isAdmin) resetProductForm();
@@ -1269,6 +1271,7 @@ function installEvents() {
     });
 
     dom.openAdminBtn.addEventListener('click', openAdmin);
+    dom.adminHeaderBtn.addEventListener('click', openAdmin);
     dom.closeAdminBtn.addEventListener('click', closeAdmin);
     dom.loginForm.addEventListener('submit', submitLogin);
     dom.logoutBtn.addEventListener('click', async () => {

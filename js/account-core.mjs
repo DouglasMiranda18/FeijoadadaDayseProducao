@@ -94,21 +94,32 @@ function orderDate(order) {
 }
 
 export function financialSummary(orders = [], { start = null, end = null } = {}) {
-    const completed = orders.filter((order) => {
-        if (order?.status !== 'delivered') return false;
+    const inRange = (order) => {
         const date = orderDate(order);
         if (!date) return false;
         return (!start || date >= start) && (!end || date <= end);
-    });
+    };
+    const periodOrders = orders.filter(inRange);
+    const completed = periodOrders.filter((order) => order?.status === 'delivered');
     const cents = (value) => Math.round((Number(value) || 0) * 100);
     const totalCents = completed.reduce((sum, order) => sum + cents(order.totals?.total || order.total), 0);
+    const productCents = completed.reduce((sum, order) => {
+        const itemTotal = (order.items || []).reduce((total, item) => total + cents(item.price) * (Number(item.quantity) || 0), 0);
+        return sum + (order.totals?.subtotal == null ? itemTotal : cents(order.totals.subtotal));
+    }, 0);
     const deliveryCents = completed.reduce((sum, order) => sum + cents(order.totals?.deliveryFee), 0);
+    const paymentFeeCents = completed.reduce((sum, order) => sum + cents(order.totals?.paymentFee), 0);
+    const itemsSold = completed.reduce((sum, order) => sum + (order.items || []).reduce((quantity, item) => quantity + (Number(item.quantity) || 0), 0), 0);
     const payments = new Map();
     const products = new Map();
+    const couriers = new Map();
+    const days = new Map();
     completed.forEach((order) => {
+        const orderTotalCents = cents(order.totals?.total || order.total);
+        const orderItems = (order.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
         const method = String(order.paymentMethod || 'Não informado');
         const payment = payments.get(method) || { method, orders: 0, totalCents: 0 };
-        payment.orders += 1; payment.totalCents += cents(order.totals?.total || order.total); payments.set(method, payment);
+        payment.orders += 1; payment.totalCents += orderTotalCents; payments.set(method, payment);
         (order.items || []).forEach((item) => {
             const key = String(item.productId || item.name || 'produto');
             const product = products.get(key) || { productId: key, name: item.name || 'Produto', quantity: 0, totalCents: 0 };
@@ -116,13 +127,28 @@ export function financialSummary(orders = [], { start = null, end = null } = {})
             product.totalCents += cents(item.price) * (Number(item.quantity) || 0);
             products.set(key, product);
         });
+        if (order.fulfillment !== 'pickup') {
+            const courierKey = String(order.courierId || order.courier?.name || 'unassigned');
+            const courier = couriers.get(courierKey) || { courierId: order.courierId || '', name: order.courier?.name || 'Sem entregador registrado', orders: 0, totalCents: 0 };
+            courier.orders += 1; courier.totalCents += orderTotalCents; couriers.set(courierKey, courier);
+        }
+        const date = orderDate(order);
+        const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const day = days.get(dayKey) || { key: dayKey, label: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(date), orders: 0, items: 0, totalCents: 0 };
+        day.orders += 1; day.items += orderItems; day.totalCents += orderTotalCents; days.set(dayKey, day);
     });
     return {
         orders: completed.length,
         revenue: totalCents / 100,
+        productSales: productCents / 100,
         averageTicket: completed.length ? totalCents / completed.length / 100 : 0,
         deliveryFees: deliveryCents / 100,
+        paymentFees: paymentFeeCents / 100,
+        itemsSold,
+        cancelledOrders: periodOrders.filter((order) => order.status === 'cancelled').length,
         payments: [...payments.values()].map((item) => ({ ...item, total: item.totalCents / 100 })).sort((a, b) => b.total - a.total),
-        products: [...products.values()].map((item) => ({ ...item, total: item.totalCents / 100 })).sort((a, b) => b.quantity - a.quantity || b.total - a.total)
+        products: [...products.values()].map((item) => ({ ...item, total: item.totalCents / 100 })).sort((a, b) => b.quantity - a.quantity || b.total - a.total),
+        couriers: [...couriers.values()].map((item) => ({ ...item, total: item.totalCents / 100 })).sort((a, b) => b.orders - a.orders || b.total - a.total),
+        days: [...days.values()].map((item) => ({ ...item, total: item.totalCents / 100 })).sort((a, b) => b.key.localeCompare(a.key))
     };
 }

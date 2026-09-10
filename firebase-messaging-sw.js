@@ -1,5 +1,5 @@
 /* Somente assets públicos entram no cache. Pedidos, conta e respostas Firebase nunca são armazenados. */
-const CACHE_NAME = 'feijoada-dayse-static-v5';
+const CACHE_NAME = 'feijoada-dayse-static-v6';
 const STATIC_ASSETS = ['./', './Index.html', './style.css', './js/app.mjs', './js/core.mjs', './js/account-core.mjs', './js/customer.mjs', './js/firebase.mjs', './imagens/Feijoada%20Da%20Dayse(Logotipo).png'];
 
 self.addEventListener('install', (event) => event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())));
