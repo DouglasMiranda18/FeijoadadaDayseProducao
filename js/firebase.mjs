@@ -1,4 +1,4 @@
-import { normalizeProduct } from './core.mjs?v=2.5.1';
+import { normalizeProduct } from './core.mjs?v=2.6.0';
 
 const firebaseConfig = Object.freeze({
     apiKey: 'AIzaSyC1zIakJQ0YZSFDNKl8l_K39ajNeAbRtbU',

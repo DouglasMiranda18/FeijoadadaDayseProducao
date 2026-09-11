@@ -18,7 +18,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800;6..12,900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.6.0">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js" defer></script>
@@ -26,7 +26,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js" defer></script>
-    <script type="module" src="js/app.mjs?v=2.5.1"></script>
+    <script type="module" src="js/app.mjs?v=2.6.0"></script>
 </head>
 <body>
     <a class="skip-link" href="#cardapio">Pular para o cardápio</a>
@@ -165,7 +165,7 @@
 
         <section class="game-invite" id="jogo" aria-labelledby="gameInviteTitle">
             <div class="game-invite__art" aria-hidden="true">
-                <img src="imagens/Feijoada%20Da%20Dayse(Logotipo).png" alt="" width="240" height="240" loading="lazy">
+                <img src="imagens/jogo-panela-corredora.png" alt="" width="240" height="240" loading="lazy">
             </div>
             <div class="game-invite__copy">
                 <p class="eyebrow">Um intervalo rapidinho</p>
@@ -424,7 +424,7 @@
     <nav class="mobile-dock" aria-label="Atalhos">
         <a href="#inicio"><span aria-hidden="true">⌂</span>Início</a>
         <a href="#cardapio"><span aria-hidden="true">≡</span>Cardápio</a>
-        <button type="button" data-open-game><span aria-hidden="true">◆</span>Jogo</button>
+        <button type="button" data-open-game><span class="mobile-game-icon" aria-hidden="true"><img src="imagens/jogo-panela-corredora.png" alt=""></span>Jogo</button>
         <button type="button" data-open-account="overview"><span aria-hidden="true">●</span>Conta</button>
         <button type="button" data-open-cart aria-label="Abrir sacola, 0 itens"><span aria-hidden="true">♨</span>Sacola <b data-cart-count>0</b></button>
     </nav>
@@ -631,29 +631,29 @@
                     <span>Pontos <strong id="gameScore">0</strong></span>
                     <span>Recorde <strong id="gameBest">0</strong></span>
                     <span class="game-combo" id="gameCombo">Combo ×1</span>
-                    <span class="game-power" id="gamePower">Sem power-up</span>
+                    <span class="game-power" id="gamePower">Normal</span>
                 </div>
                 <button class="icon-button" id="closeGameBtn" type="button" aria-label="Fechar jogo">×</button>
             </header>
 
             <div class="game-stage-wrap">
-                <canvas id="gameCanvas" width="720" height="440" role="img" aria-label="Jogo Corre, Feijão: mova a panelinha, pegue feijões e desvie dos obstáculos"></canvas>
+                <canvas id="gameCanvas" width="720" height="440" role="img" aria-label="Jogo Corre, Feijão: arraste ou use os botões para mover a panelinha, pegar feijões e desviar dos obstáculos"></canvas>
                 <div class="game-start-card" id="gameStartCard">
-                    <span class="game-start-bean" aria-hidden="true"></span>
+                    <img class="game-start-mascot" src="imagens/jogo-panela-corredora.png" alt="" width="144" height="144">
                     <h3 id="gameStateTitle">Panela no fogo?</h3>
-                    <p id="gameStateText">Use as setas ou WASD. No celular, segure os botões.</p>
+                    <p id="gameStateText">No celular, arraste a panela. No computador, use as setas ou WASD.</p>
                     <button class="button button--sun" id="startGameBtn" type="button">Começar</button>
                 </div>
                 <p class="sr-only" id="gameAnnouncement" aria-live="polite"></p>
-            </div>
-
-            <div class="game-controls" aria-label="Controles por toque">
-                <span></span>
-                <button type="button" data-direction="up" aria-label="Mover para cima">↑</button>
-                <span></span>
-                <button type="button" data-direction="left" aria-label="Mover para esquerda">←</button>
-                <button type="button" data-direction="down" aria-label="Mover para baixo">↓</button>
-                <button type="button" data-direction="right" aria-label="Mover para direita">→</button>
+                <span class="game-touch-hint" aria-hidden="true">Arraste para mover</span>
+                <div class="game-controls" aria-label="Controles por toque">
+                    <span></span>
+                    <button type="button" data-direction="up" aria-label="Mover para cima">↑</button>
+                    <span></span>
+                    <button type="button" data-direction="left" aria-label="Mover para esquerda">←</button>
+                    <button type="button" data-direction="down" aria-label="Mover para baixo">↓</button>
+                    <button type="button" data-direction="right" aria-label="Mover para direita">→</button>
+                </div>
             </div>
             <div class="game-footer">
                 <p>Faça combos, pegue a Farofa Dourada e use o escudo da panela.</p>

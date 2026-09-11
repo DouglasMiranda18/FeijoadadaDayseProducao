@@ -3133,3 +3133,276 @@ td:last-child {
     .game-combo,
     .game-power { min-width: 0; width: calc(50% - 0.5rem); }
 }
+
+/* Arcade 2.0: personagem próprio, leitura mais clara e controle por arraste no celular. */
+.game-dialog {
+    position: relative;
+    border: 1px solid rgba(255, 224, 160, 0.2);
+    border-radius: 1.1rem;
+    background: #290b10;
+}
+
+.game-header {
+    background: linear-gradient(135deg, #641d25 0%, #451218 72%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.game-scoreboard span {
+    border-radius: 0.65rem;
+    background: rgba(20, 3, 6, 0.22);
+}
+
+.game-stage-wrap {
+    min-height: 20rem;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.game-start-card {
+    z-index: 4;
+    background: radial-gradient(circle at 50% 38%, rgba(102, 31, 37, 0.72), rgba(26, 5, 8, 0.94) 72%);
+    backdrop-filter: blur(4px);
+}
+
+.game-start-mascot {
+    width: clamp(6rem, 18vw, 9rem);
+    height: auto;
+    filter: drop-shadow(0 0.9rem 1.2rem rgba(0, 0, 0, 0.35));
+    animation: game-mascot-bob 1.8s ease-in-out infinite;
+}
+
+.game-touch-hint {
+    position: absolute;
+    z-index: 2;
+    right: 0.8rem;
+    bottom: 0.8rem;
+    display: none;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(23, 4, 7, 0.68);
+    color: #f6ddc5;
+    padding: 0.42rem 0.7rem;
+    font-size: 0.72rem;
+    font-weight: 900;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+}
+
+.mobile-game-icon {
+    width: 1.65rem;
+    height: 1.65rem;
+}
+
+.mobile-game-icon img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0.1rem 0.15rem rgba(0, 0, 0, 0.3));
+}
+
+@keyframes game-mascot-bob {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-0.35rem) rotate(1deg); }
+}
+
+@media (max-width: 42rem), (pointer: coarse) {
+    .game-overlay {
+        align-items: stretch;
+        padding: 0;
+    }
+
+    .game-dialog {
+        display: grid;
+        width: 100%;
+        height: 100dvh;
+        max-height: none;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        overscroll-behavior: contain;
+    }
+
+    .game-header {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.45rem;
+        padding: max(0.55rem, env(safe-area-inset-top)) 0.7rem 0.55rem;
+    }
+
+    .game-header .eyebrow {
+        margin: 0;
+        font-size: 0.62rem;
+    }
+
+    .game-header h2 {
+        font-size: 1.55rem;
+        line-height: 1;
+    }
+
+    .game-header > .icon-button {
+        width: 2.65rem;
+        height: 2.65rem;
+        min-height: 2.65rem;
+    }
+
+    .game-scoreboard {
+        display: grid;
+        width: 100%;
+        grid-column: 1 / -1;
+        grid-row: 2;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.35rem;
+    }
+
+    .game-scoreboard span,
+    .game-combo,
+    .game-power {
+        width: auto;
+        min-width: 0;
+        padding: 0.36rem 0.42rem;
+        overflow: hidden;
+        font-size: 0.59rem;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .game-scoreboard strong {
+        font-size: 1rem;
+    }
+
+    .game-stage-wrap {
+        min-height: 0;
+    }
+
+    #gameCanvas {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        cursor: grab;
+    }
+
+    #gameCanvas:active {
+        cursor: grabbing;
+    }
+
+    .game-start-card {
+        padding: 1rem 1.25rem;
+    }
+
+    .game-start-card h3 {
+        margin-top: 0.15rem;
+        font-size: clamp(1.75rem, 8vw, 2.5rem);
+    }
+
+    .game-start-card p {
+        max-width: 23rem;
+        margin-bottom: 0.85rem;
+        font-size: 0.9rem;
+    }
+
+    .game-start-mascot {
+        width: clamp(6.5rem, 34vw, 9rem);
+    }
+
+    .game-controls {
+        position: absolute;
+        z-index: 3;
+        bottom: max(0.65rem, env(safe-area-inset-bottom));
+        left: 0.65rem;
+        display: grid;
+        width: 9.7rem;
+        margin: 0;
+        gap: 0.22rem;
+        opacity: 0.88;
+    }
+
+    .game-controls button {
+        min-height: 3rem;
+        border-color: rgba(255, 255, 255, 0.28);
+        border-radius: 0.85rem;
+        background: rgba(62, 17, 23, 0.82);
+        box-shadow: 0 0.3rem 0.7rem rgba(0, 0, 0, 0.18);
+        font-size: 1.2rem;
+        backdrop-filter: blur(8px);
+    }
+
+    .game-touch-hint {
+        display: block;
+        bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+
+    .game-footer {
+        min-height: 3.5rem;
+        padding: 0.55rem 0.8rem max(0.55rem, env(safe-area-inset-bottom));
+        background: #4b141b;
+    }
+
+    .game-footer p {
+        display: none;
+    }
+
+    .game-footer > div {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .game-footer .text-button {
+        min-height: 2.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 0.65rem;
+        padding-inline: 0.75rem;
+        background: rgba(255, 255, 255, 0.06);
+    }
+}
+
+@media (pointer: coarse) and (max-height: 34rem) and (orientation: landscape) {
+    .game-dialog {
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .game-header {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .game-header .eyebrow {
+        display: none;
+    }
+
+    .game-scoreboard {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .game-footer {
+        position: absolute;
+        z-index: 5;
+        right: 0.65rem;
+        bottom: 0.65rem;
+        min-height: 0;
+        border-radius: 0.75rem;
+        padding: 0.2rem;
+        background: rgba(42, 8, 12, 0.74);
+        backdrop-filter: blur(8px);
+    }
+
+    .game-footer .text-button {
+        min-height: 2.4rem;
+    }
+
+    .game-touch-hint {
+        right: 0.75rem;
+        bottom: 3.8rem;
+    }
+
+    .game-start-card {
+        grid-template-columns: auto minmax(0, 22rem);
+        column-gap: 1rem;
+    }
+
+    .game-start-mascot {
+        grid-row: 1 / 4;
+        width: min(24vh, 7rem);
+    }
+}
