@@ -87,6 +87,15 @@ export function friendlyOrderId(id = '') {
     return `FD-${String(id).replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase() || 'NOVO'}`;
 }
 
+export function orderBeverages(items = []) {
+    const drinkWords = /\b(agua|cerveja|coca|guarana|pepsi|refrigerante|suco|bebida)\b/;
+    return items.filter((item) => {
+        const category = String(item?.category || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const name = String(item?.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        return category === 'bebidas' || drinkWords.test(name);
+    });
+}
+
 function orderDate(order) {
     const value = order.deliveredAt || order.updatedAt || order.createdAt;
     const date = value?.toDate?.() || (value ? new Date(value) : null);

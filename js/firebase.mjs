@@ -1,4 +1,4 @@
-import { normalizeProduct } from './core.mjs?v=2.4.0';
+import { normalizeProduct } from './core.mjs?v=2.5.0';
 
 const firebaseConfig = Object.freeze({
     apiKey: 'AIzaSyC1zIakJQ0YZSFDNKl8l_K39ajNeAbRtbU',
@@ -264,16 +264,32 @@ export function startCourierLocation(orderId, onData, onError) {
     if (!realtimeDb) throw Object.assign(new Error('Realtime Database não configurado.'), { code: 'database/unavailable' });
     if (!navigator.geolocation) throw Object.assign(new Error('GPS indisponível neste aparelho.'), { code: 'geolocation/unsupported' });
     const ref = realtimeDb.ref(`activeDeliveries/${orderId}`);
-    ref.onDisconnect().remove().catch(() => {});
+    const trail = [];
+    let lastTrailPoint = null;
+    const distanceMeters = (a, b) => {
+        if (!a || !b) return Infinity;
+        const toRad = (value) => value * Math.PI / 180;
+        const dLat = toRad(b.latitude - a.latitude); const dLng = toRad(b.longitude - a.longitude);
+        const lat1 = toRad(a.latitude); const lat2 = toRad(b.latitude);
+        const value = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        return 6371000 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+    };
     const watchId = navigator.geolocation.watchPosition((position) => {
+        const now = Date.now();
+        const point = { latitude: position.coords.latitude, longitude: position.coords.longitude, updatedAt: now };
+        if (!lastTrailPoint || distanceMeters(lastTrailPoint, point) >= 8 || now - lastTrailPoint.updatedAt >= 15000) {
+            trail.push(point);
+            if (trail.length > 60) trail.shift();
+            lastTrailPoint = point;
+        }
         const payload = {
             courierId: auth.currentUser?.uid || '', latitude: position.coords.latitude, longitude: position.coords.longitude,
             accuracy: position.coords.accuracy, heading: position.coords.heading ?? null, speed: position.coords.speed ?? null,
-            updatedAt: firebase.database.ServerValue.TIMESTAMP
+            updatedAt: firebase.database.ServerValue.TIMESTAMP, trail
         };
         ref.set(payload).then(() => onData?.(payload)).catch(onError);
     }, onError, { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
-    return () => { navigator.geolocation.clearWatch(watchId); ref.remove().catch(() => {}); };
+    return () => { navigator.geolocation.clearWatch(watchId); };
 }
 
 export function subscribeCustomers(onData, onError) {

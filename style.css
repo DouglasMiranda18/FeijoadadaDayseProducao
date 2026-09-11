@@ -3047,9 +3047,23 @@ td:last-child {
 .courier-progress { border-top: 1px solid var(--line); margin-top: 0.9rem; padding-top: 0.9rem; }
 .courier-progress .button { width: 100%; }
 .admin-customer-row > .button { min-width: 10rem; }
-.delivery-location { background: rgba(68, 116, 74, 0.1); border: 1px solid rgba(68, 116, 74, 0.25); border-radius: 0.85rem; margin-top: 1rem; padding: 1rem; }
+.delivery-location { background: rgba(68, 116, 74, 0.1); border: 1px solid rgba(68, 116, 74, 0.25); border-radius: 1rem; margin-top: 1rem; overflow: hidden; padding: 1rem; }
 .delivery-location h3 { margin: 0; }
 .delivery-location p { margin: 0.35rem 0 0.8rem; }
+.delivery-location__heading { align-items: center; display: flex; gap: 0.8rem; }
+.delivery-location__heading p { color: var(--muted); font-size: 0.84rem; }
+.delivery-avatar { align-items: center; background: var(--sun); border: 0.22rem solid var(--white); border-radius: 50%; box-shadow: 0 0.15rem 0.65rem rgba(50, 29, 22, 0.16); display: flex; flex: 0 0 auto; font-size: 1.35rem; height: 3.2rem; justify-content: center; width: 3.2rem; }
+.delivery-location__meta { color: var(--muted); font-size: 0.78rem; }
+.delivery-location__meta.is-stale { color: var(--danger); font-weight: 800; }
+.delivery-location__distance { display: block; font-size: 0.92rem; margin-bottom: 0.75rem; }
+.delivery-map { background: #d9e5d8; border: 1px solid rgba(50, 29, 22, 0.16); border-radius: 0.85rem; height: clamp(17rem, 42vh, 26rem); overflow: hidden; width: 100%; }
+.delivery-map-marker { align-items: center; background: var(--sun); border: 0.2rem solid var(--white); border-radius: 50%; box-shadow: 0 0.2rem 0.8rem rgba(50, 29, 22, 0.35); display: flex; font-size: 1.3rem; height: 2.8rem; justify-content: center; width: 2.8rem; }
+.delivery-map-marker.is-home { background: var(--wine); color: var(--white); font-size: 1.4rem; height: 2.5rem; width: 2.5rem; }
+.delivery-map-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: space-between; margin-top: 0.8rem; }
+.delivery-map-actions .button { min-height: 2.6rem; padding: 0.55rem 0.8rem; }
+.beverage-reminder { background: #fff4cf; border: 1px solid #e6b33d; border-left: 0.35rem solid var(--sun); border-radius: 0.75rem; margin-top: 0.85rem; padding: 0.8rem 0.9rem; }
+.beverage-reminder strong { color: var(--wine-dark); display: block; }
+.beverage-reminder p { color: var(--ink-soft); margin: 0.2rem 0 0; }
 .danger-text { color: var(--danger); }
 .admin-product-search { display: block; margin-bottom: 0.8rem; max-width: 32rem; }
 .admin-customer-list { background: var(--cream); border: 1px solid var(--line); padding: 0 1rem; }

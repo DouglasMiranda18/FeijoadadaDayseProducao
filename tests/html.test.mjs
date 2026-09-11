@@ -39,6 +39,12 @@ test('admin tem acesso no cabeçalho e financeiro detalhado', () => {
     assert.match(html, /id="adminDailyPerformance"/);
 });
 
+test('acompanhamento carrega mapa interativo', () => {
+    assert.match(html, /leaflet@1\.9\.4\/dist\/leaflet\.css/);
+    assert.match(html, /leaflet@1\.9\.4\/dist\/leaflet\.js/);
+    assert.match(html, /id="orderTrackingDialog"/);
+});
+
 test('assets locais referenciados pelo HTML existem', async () => {
     const references = [...html.matchAll(/(?:href|src)="([^"#]+)"/g)]
         .map((match) => match[1])

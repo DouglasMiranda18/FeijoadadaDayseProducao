@@ -2,6 +2,7 @@ import {
     friendlyOrderId,
     financialSummary,
     loyaltyLevel,
+    orderBeverages,
     orderFlow,
     publicName,
     rankEntries,
@@ -9,8 +10,8 @@ import {
     statusLabel,
     unreadCount,
     validNextStatuses
-} from './account-core.mjs?v=2.4.0';
-import { formatPhone, money, normalizeText } from './core.mjs?v=2.4.0';
+} from './account-core.mjs?v=2.5.0';
+import { formatPhone, haversineKm, money, normalizeText } from './core.mjs?v=2.5.0';
 
 const VAPID_KEY = document.querySelector('meta[name="firebase-vapid-key"]')?.content.trim() || '';
 
@@ -48,7 +49,7 @@ export function initCustomerExperience(api) {
     const state = {
         user: null, profile: null, isAdmin: false, isCourier: false, authMode: 'login', accountView: 'overview', addresses: [], favorites: [], orders: [], courierOrders: [], notifications: [],
         leaderboards: { game_weekly: [], game_all: [], customers_monthly: [], customers_all: [] }, publicRanking: 'game_weekly', adminOrders: [], customers: [], gameSession: null,
-        settings: {}, pendingDeepLinkOrder: new URLSearchParams(location.search).get('pedido') || '', adminOrderIds: null, deliveryLocation: null, trackedLocationOrderId: '', trackedLocationUnsubscribe: null, locationStops: new Map(),
+        settings: {}, pendingDeepLinkOrder: new URLSearchParams(location.search).get('pedido') || '', adminOrderIds: null, deliveryLocation: null, deliveryMap: null, trackedLocationOrderId: '', trackedLocationUnsubscribe: null, locationStops: new Map(),
         unsubscribers: [], adminUnsubscribers: []
     };
 
@@ -247,6 +248,9 @@ export function initCustomerExperience(api) {
         active.forEach((order) => {
             const card = el('article', `courier-card order-card status-${order.status}`);
             const heading = el('div', 'order-card__top'); heading.append(el('strong', '', friendlyOrderId(order.id)), el('span', 'order-status', statusLabel(order.status)));
+            const beverages = orderBeverages(order.items);
+            const beverageReminder = beverages.length ? el('aside', 'beverage-reminder') : null;
+            if (beverageReminder) beverageReminder.append(el('strong', '', 'Confira as bebidas antes de sair'), el('p', '', beverages.map((item) => `${item.quantity}× ${item.name}`).join(' · ')));
             const contact = el('div', 'courier-customer'); contact.append(el('strong', '', order.customer?.name || 'Cliente'), el('small', '', order.customer?.phone || 'Telefone não informado'), el('p', '', deliveryAddress(order) || 'Endereço não informado'));
             const links = customerPhoneLinks(order); const contacts = el('div', 'courier-actions');
             if (links.tel) { const call = el('a', 'button button--quiet', 'Ligar'); call.href = links.tel; contacts.append(call); }
@@ -260,7 +264,7 @@ export function initCustomerExperience(api) {
             const progress = el('div', 'courier-progress');
             const next = order.status === 'ready' ? ['out_for_delivery', 'Iniciar entrega'] : order.status === 'out_for_delivery' ? ['arrived', 'Cheguei ao endereço'] : order.status === 'arrived' ? ['delivered', 'Marcar como entregue'] : null;
             if (next) { const button = el('button', `button ${next[0] === 'arrived' ? 'button--sun' : 'button--red'}`, next[1]); button.type = 'button'; button.dataset.courierOrderStatus = next[0]; button.dataset.orderId = order.id; progress.append(button); }
-            card.append(heading, contact, contacts, progress); container.append(card);
+            card.append(heading); if (beverageReminder) card.append(beverageReminder); card.append(contact, contacts, progress); container.append(card);
         });
     }
 
@@ -345,7 +349,73 @@ export function initCustomerExperience(api) {
         });
     }
 
+    function destroyDeliveryMap() {
+        state.deliveryMap?.map?.remove();
+        state.deliveryMap = null;
+    }
+
+    function destinationPoint(order) {
+        const latitude = Number(order?.delivery?.latitude); const longitude = Number(order?.delivery?.longitude);
+        return Number.isFinite(latitude) && Number.isFinite(longitude) ? { lat: latitude, lng: longitude } : null;
+    }
+
+    function locationCopy(location, destination) {
+        const updated = new Date(Number(location?.updatedAt) || Date.now());
+        const age = Math.max(0, Date.now() - updated.getTime());
+        const precision = Number(location?.accuracy);
+        const courier = { lat: Number(location?.latitude), lng: Number(location?.longitude) };
+        const distance = destination ? haversineKm(courier, destination) : null;
+        return {
+            text: `${age > 60000 ? 'Último sinal' : 'Atualizado'} às ${new Intl.DateTimeFormat('pt-BR', { timeStyle: 'medium' }).format(updated)}${Number.isFinite(precision) ? ` · precisão de ${Math.round(precision)} m` : ''}`,
+            distance: Number.isFinite(distance) ? `${distance < 1 ? `${Math.max(10, Math.round(distance * 1000))} m` : `${distance.toFixed(1)} km`} do destino (aprox.)` : '',
+            stale: age > 60000
+        };
+    }
+
+    function updateDeliveryMap(location) {
+        const live = state.deliveryMap;
+        if (!live || !location || !Number.isFinite(Number(location.latitude)) || !Number.isFinite(Number(location.longitude))) return;
+        const point = [Number(location.latitude), Number(location.longitude)];
+        live.marker.setLatLng(point);
+        live.accuracy.setLatLng(point).setRadius(Math.max(5, Number(location.accuracy) || 5));
+        const trail = (Array.isArray(location.trail) ? location.trail : Object.values(location.trail || {}))
+            .map((item) => [Number(item?.latitude), Number(item?.longitude)])
+            .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
+        live.trail.setLatLngs(trail);
+        if (live.destination) live.route.setLatLngs([point, [live.destination.lat, live.destination.lng]]);
+        const copy = locationCopy(location, live.destination);
+        live.meta.textContent = copy.text;
+        live.meta.classList.toggle('is-stale', copy.stale);
+        live.distance.textContent = copy.distance;
+        if (live.follow) live.map.panTo(point, { animate: true, duration: 0.6 });
+    }
+
+    function mountDeliveryMap(order, host, meta, distance, centerButton) {
+        if (!window.L || !state.deliveryLocation || !host.isConnected) return;
+        const point = [Number(state.deliveryLocation.latitude), Number(state.deliveryLocation.longitude)];
+        if (!point.every(Number.isFinite)) return;
+        const destination = destinationPoint(order);
+        const map = window.L.map(host, { zoomControl: true, attributionControl: true }).setView(point, 16);
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+        const courierIcon = window.L.divIcon({ className: 'delivery-map-marker', html: '<span aria-hidden="true">🛵</span>', iconSize: [46, 46], iconAnchor: [23, 23] });
+        const homeIcon = window.L.divIcon({ className: 'delivery-map-marker is-home', html: '<span aria-hidden="true">⌂</span>', iconSize: [40, 40], iconAnchor: [20, 20] });
+        const marker = window.L.marker(point, { icon: courierIcon, title: 'Posição do entregador', alt: 'Posição do entregador' }).addTo(map);
+        const accuracy = window.L.circle(point, { radius: Math.max(5, Number(state.deliveryLocation.accuracy) || 5), color: '#661f25', fillColor: '#f5bd49', fillOpacity: 0.15, weight: 1 }).addTo(map);
+        const trail = window.L.polyline([], { color: '#661f25', opacity: 0.65, weight: 5 }).addTo(map);
+        const route = window.L.polyline([], { color: '#44744a', dashArray: '8 9', opacity: 0.75, weight: 3 }).addTo(map);
+        if (destination) {
+            window.L.marker([destination.lat, destination.lng], { icon: homeIcon, title: 'Endereço de entrega', alt: 'Endereço de entrega' }).addTo(map);
+            map.fitBounds(window.L.latLngBounds([point, [destination.lat, destination.lng]]), { padding: [42, 42], maxZoom: 16 });
+        }
+        state.deliveryMap = { orderId: order.id, map, marker, accuracy, trail, route, destination, meta, distance, follow: false };
+        centerButton.addEventListener('click', () => { if (!state.deliveryMap) return; state.deliveryMap.follow = true; state.deliveryMap.map.setView(state.deliveryMap.marker.getLatLng(), 17, { animate: true }); });
+        map.on('dragstart zoomstart', () => { if (state.deliveryMap) state.deliveryMap.follow = false; });
+        updateDeliveryMap(state.deliveryLocation);
+        setTimeout(() => map.invalidateSize(), 50);
+    }
+
     function renderTracking(order) {
+        destroyDeliveryMap();
         dom.trackingContent.replaceChildren();
         if (!order) return dom.trackingContent.append(el('p', 'empty-note', 'Não foi possível localizar este pedido.'));
         const header = el('div', 'tracking-heading'); header.append(el('p', 'eyebrow eyebrow--dark', 'Seu pedido'), el('h2', '', friendlyOrderId(order.id)), el('span', 'order-status', statusLabel(order.status)), el('p', '', `Atualizado ${stampDate(order.updatedAt || order.createdAt)}`));
@@ -355,11 +425,17 @@ export function initCustomerExperience(api) {
         const summary = el('div', 'tracking-summary'); summary.append(el('h3', '', 'Resumo'), el('p', '', (order.items || []).map((item) => `${item.quantity}× ${item.name}`).join(' · ')), el('strong', '', money(order.totals?.total || order.total || 0)));
         const location = el('div', 'delivery-location');
         if (['out_for_delivery', 'arrived'].includes(order.status)) {
-            location.append(el('h3', '', 'Localização do entregador'));
+            const courierName = order.courier?.name || 'Seu entregador';
+            const locationHeading = el('div', 'delivery-location__heading');
+            const locationCopy = el('div'); locationCopy.append(el('h3', '', order.status === 'arrived' ? `${courierName} chegou` : `${courierName} está a caminho`), el('p', '', order.status === 'arrived' ? 'Vá ao encontro do entregador.' : 'A posição é atualizada enquanto o navegador do entregador permanece ativo.'));
+            locationHeading.append(el('span', 'delivery-avatar', '🛵'), locationCopy); location.append(locationHeading);
             if (state.deliveryLocation?.latitude != null && state.deliveryLocation?.longitude != null) {
-                const updated = new Date(Number(state.deliveryLocation.updatedAt) || Date.now());
-                location.append(el('p', '', `Última atualização: ${new Intl.DateTimeFormat('pt-BR', { timeStyle: 'medium' }).format(updated)}`));
-                const map = el('a', 'button button--quiet', 'Ver posição no mapa'); map.target = '_blank'; map.rel = 'noopener noreferrer'; map.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${state.deliveryLocation.latitude},${state.deliveryLocation.longitude}`)}`; location.append(map);
+                const meta = el('p', 'delivery-location__meta'); const distance = el('strong', 'delivery-location__distance');
+                const mapHost = el('div', 'delivery-map'); mapHost.setAttribute('role', 'application'); mapHost.setAttribute('aria-label', 'Mapa ao vivo da entrega');
+                const actions = el('div', 'delivery-map-actions'); const center = el('button', 'button button--quiet', 'Centralizar entregador'); center.type = 'button';
+                const external = el('a', 'text-button', 'Abrir no Google Maps'); external.target = '_blank'; external.rel = 'noopener noreferrer'; external.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${state.deliveryLocation.latitude},${state.deliveryLocation.longitude}`)}`;
+                actions.append(center, external); location.append(meta, distance, mapHost, actions);
+                requestAnimationFrame(() => mountDeliveryMap(order, mapHost, meta, distance, center));
             } else location.append(el('p', 'empty-note', order.status === 'arrived' ? 'O entregador informou que chegou ao endereço.' : 'Aguardando o primeiro sinal de localização do entregador.'));
         }
         const wait = el('div', 'tracking-game'); wait.append(el('strong', '', 'Enquanto sua feijoada não chega…')); const play = el('button', 'button button--sun', 'Jogar Corre, Feijão!'); play.type = 'button'; play.addEventListener('click', api.openGame); wait.append(play);
@@ -373,7 +449,12 @@ export function initCustomerExperience(api) {
         }
         if (state.trackedLocationOrderId === order.id) return;
         state.trackedLocationUnsubscribe?.(); state.deliveryLocation = null; state.trackedLocationOrderId = order.id;
-        state.trackedLocationUnsubscribe = firebase.subscribeDeliveryLocation(order.id, (location) => { state.deliveryLocation = location; renderTrackingIfOpen(); }, () => { state.deliveryLocation = null; renderTrackingIfOpen(); });
+        state.trackedLocationUnsubscribe = firebase.subscribeDeliveryLocation(order.id, (location) => {
+            const hadLocation = Boolean(state.deliveryLocation);
+            state.deliveryLocation = location;
+            if (location && hadLocation && state.deliveryMap?.orderId === order.id) updateDeliveryMap(location);
+            else renderTrackingIfOpen();
+        }, () => { state.deliveryLocation = null; renderTrackingIfOpen(); });
     }
 
     function openTracking(orderId) {
@@ -578,7 +659,7 @@ export function initCustomerExperience(api) {
         });
     }
 
-    async function updateCourierOrder(orderId, status, button) {
+    async function performCourierOrderUpdate(orderId, status, button) {
         button.disabled = true;
         try {
             const result = await firebase.updateCourierDelivery({ orderId, status });
@@ -588,6 +669,20 @@ export function initCustomerExperience(api) {
             api.showToast(status === 'arrived' ? `Cliente avisado${sent ? ' por notificação push' : ' dentro da conta'}.` : `${friendlyOrderId(orderId)}: ${statusLabel(status)}.`);
         } catch (error) { api.showToast(firebase.firebaseErrorMessage(error, 'atualizar a entrega'), 'error'); }
         finally { button.disabled = false; }
+    }
+
+    function updateCourierOrder(orderId, status, button) {
+        const order = state.courierOrders.find((item) => item.id === orderId);
+        const beverages = orderBeverages(order?.items);
+        if (status === 'out_for_delivery' && beverages.length) {
+            return api.askConfirmation({
+                title: 'As bebidas estão com você?',
+                text: `Confira antes de sair: ${beverages.map((item) => `${item.quantity}× ${item.name}`).join(' · ')}.`,
+                confirmLabel: 'Conferi as bebidas',
+                action: () => performCourierOrderUpdate(orderId, status, button)
+            });
+        }
+        return performCourierOrderUpdate(orderId, status, button);
     }
 
     function startLocationSharing(orderId) {
@@ -616,7 +711,7 @@ export function initCustomerExperience(api) {
     document.querySelectorAll('[data-close-auth]').forEach((button) => button.addEventListener('click', () => api.closeOverlay(dom.authDialog)));
     document.querySelectorAll('[data-close-account]').forEach((button) => button.addEventListener('click', closeAccount));
     document.querySelectorAll('[data-close-notifications]').forEach((button) => button.addEventListener('click', () => api.closeOverlay(dom.notificationDrawer)));
-    document.querySelectorAll('[data-close-tracking]').forEach((button) => button.addEventListener('click', () => { state.trackedLocationUnsubscribe?.(); state.trackedLocationUnsubscribe = null; state.trackedLocationOrderId = ''; state.deliveryLocation = null; api.closeOverlay(dom.trackingDialog); }));
+    document.querySelectorAll('[data-close-tracking]').forEach((button) => button.addEventListener('click', () => { state.trackedLocationUnsubscribe?.(); state.trackedLocationUnsubscribe = null; state.trackedLocationOrderId = ''; state.deliveryLocation = null; destroyDeliveryMap(); api.closeOverlay(dom.trackingDialog); }));
     document.querySelectorAll('[data-auth-mode]').forEach((button) => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
     dom.resetPassword.addEventListener('click', () => setAuthMode(state.authMode === 'reset' ? 'login' : 'reset'));
     dom.authPhone.addEventListener('input', () => { dom.authPhone.value = formatPhone(dom.authPhone.value); });

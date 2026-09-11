@@ -4,6 +4,7 @@ import {
     friendlyOrderId,
     financialSummary,
     loyaltyLevel,
+    orderBeverages,
     plausibleGameScore,
     publicName,
     rankEntries,
@@ -72,4 +73,13 @@ test('fidelidade e identificador amigável têm limites claros', () => {
     assert.equal(loyaltyLevel(0).label, 'Chegando agora');
     assert.equal(loyaltyLevel(10).label, 'Fã da feijoada');
     assert.equal(friendlyOrderId('abc123456789'), 'FD-456789');
+});
+
+test('lembrete de saída reconhece bebidas novas e pedidos antigos', () => {
+    const drinks = orderBeverages([
+        { name: 'Feijoada', category: 'comidas', quantity: 1 },
+        { name: 'Coca cola lata', category: 'bebidas', quantity: 2 },
+        { name: 'Suco de 300ml', quantity: 1 }
+    ]);
+    assert.deepEqual(drinks.map((item) => item.name), ['Coca cola lata', 'Suco de 300ml']);
 });

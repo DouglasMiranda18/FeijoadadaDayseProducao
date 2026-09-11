@@ -56,7 +56,7 @@ export const createOrder = onCall({ region: REGION, enforceAppCheck: false }, as
     if (!snapshot.exists || product.availability === false) throw new HttpsError('failed-precondition', 'Um item não está mais disponível.');
     const price = Number(product.price);
     if (!Number.isFinite(price) || price <= 0) throw new HttpsError('failed-precondition', 'Preço de produto inválido.');
-    return { productId: snapshot.id, name: safeText(product.name, 90), price, quantity: normalized[index].quantity };
+    return { productId: snapshot.id, name: safeText(product.name, 90), category: safeText(product.category, 40), price, quantity: normalized[index].quantity };
   });
   const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100;
   const paymentMethod = safeText(data.paymentMethod, 40);
@@ -68,7 +68,11 @@ export const createOrder = onCall({ region: REGION, enforceAppCheck: false }, as
     customerId: auth.uid,
     customer: { name: safeText(data.customer?.name || auth.token.name, 80), phone: safeText(data.customer?.phone, 24), email: safeText(auth.token.email, 120) },
     fulfillment: 'delivery',
-    delivery: { cep: safeText(data.delivery?.cep, 10), street: safeText(data.delivery?.street, 120), number: safeText(data.delivery?.number, 20), neighborhood: safeText(data.delivery?.neighborhood, 80), city: safeText(data.delivery?.city, 100), quotedDistance: Number(data.delivery?.quote?.distance) || null },
+    delivery: {
+      cep: safeText(data.delivery?.cep, 10), street: safeText(data.delivery?.street, 120), number: safeText(data.delivery?.number, 20), neighborhood: safeText(data.delivery?.neighborhood, 80), city: safeText(data.delivery?.city, 100), quotedDistance: Number(data.delivery?.quote?.distance) || null,
+      latitude: Number.isFinite(Number(data.delivery?.quote?.latitude)) ? Math.max(-90, Math.min(90, Number(data.delivery.quote.latitude))) : null,
+      longitude: Number.isFinite(Number(data.delivery?.quote?.longitude)) ? Math.max(-180, Math.min(180, Number(data.delivery.quote.longitude))) : null
+    },
     items, paymentMethod, changeAmount: Math.max(0, Number(data.changeAmount) || 0), notes: safeText(data.notes, 300),
     totals: { subtotal, deliveryFee: quotedFee, paymentFee, total: Math.round((subtotal + quotedFee + paymentFee) * 100) / 100 },
     status: 'received', statusHistory: [{ status: 'received', at: Timestamp.now(), actor: 'customer' }],

@@ -20,8 +20,8 @@ import {
     paymentFee,
     reconcileCart,
     sortProducts
-} from './core.mjs?v=2.4.0';
-import { initCustomerExperience } from './customer.mjs?v=2.4.0';
+} from './core.mjs?v=2.5.0';
+import { initCustomerExperience } from './customer.mjs?v=2.5.0';
 
 const WHATSAPP_NUMBER = '5581987484019';
 const CART_STORAGE_KEY = 'feijoada-dayse-cart-v2';
@@ -777,7 +777,7 @@ async function calculateDeliveryQuote() {
         const distance = haversineKm(STORE_LOCATION, point);
         const fee = deliveryFeeFromDistance(distance);
         if (fee === null) throw new Error('Distância inválida');
-        state.deliveryQuote = { status: 'ready', fee, distance, source: 'distance' };
+        state.deliveryQuote = { status: 'ready', fee, distance, source: 'distance', latitude: point.lat, longitude: point.lng };
         setAddressStatus(`Entrega calculada para ${distance.toFixed(1)} km.`, 'success');
     } catch (error) {
         if (error.name === 'AbortError') return;

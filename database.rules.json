@@ -12,7 +12,12 @@
       "$orderId": {
         ".read": "auth != null && (auth.token.admin == true || root.child('deliveryAccess').child($orderId).child('customerId').val() == auth.uid || root.child('deliveryAccess').child($orderId).child('courierId').val() == auth.uid)",
         ".write": "auth != null && auth.token.courier == true && root.child('deliveryAccess').child($orderId).child('courierId').val() == auth.uid && (!newData.exists() || newData.child('courierId').val() == auth.uid)",
-        ".validate": "!newData.exists() || (newData.hasChildren(['courierId', 'latitude', 'longitude', 'accuracy', 'updatedAt']) && newData.child('latitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').isNumber() && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && newData.child('accuracy').isNumber())"
+        ".validate": "!newData.exists() || (newData.hasChildren(['courierId', 'latitude', 'longitude', 'accuracy', 'updatedAt']) && newData.child('latitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').isNumber() && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && newData.child('accuracy').isNumber())",
+        "trail": {
+          "$point": {
+            ".validate": "newData.hasChildren(['latitude', 'longitude', 'updatedAt']) && newData.child('latitude').isNumber() && newData.child('latitude').val() >= -90 && newData.child('latitude').val() <= 90 && newData.child('longitude').isNumber() && newData.child('longitude').val() >= -180 && newData.child('longitude').val() <= 180 && newData.child('updatedAt').isNumber()"
+          }
+        }
       }
     }
   }
