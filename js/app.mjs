@@ -20,8 +20,8 @@ import {
     paymentFee,
     reconcileCart,
     sortProducts
-} from './core.mjs?v=2.5.0';
-import { initCustomerExperience } from './customer.mjs?v=2.5.0';
+} from './core.mjs?v=2.5.1';
+import { initCustomerExperience } from './customer.mjs?v=2.5.1';
 
 const WHATSAPP_NUMBER = '5581987484019';
 const CART_STORAGE_KEY = 'feijoada-dayse-cart-v2';
@@ -146,8 +146,10 @@ const state = {
     selectedProduct: null,
     selectedQuantity: 1,
     deliveryQuote: null,
+    cepPoint: null,
     quoteController: null,
     quoteTimer: null,
+    cepSearchTimer: null,
     toastTimer: null,
     confirmAction: null,
     firebase: null,
@@ -676,6 +678,7 @@ function cancelConfirmation() {
 function clearCart({ resetForm = false } = {}) {
     state.cart = [];
     state.deliveryQuote = null;
+    state.cepPoint = null;
     saveCart();
     updateCartCounts();
     if (resetForm) dom.orderForm.reset();
@@ -692,34 +695,45 @@ function fullAddress() {
     return `${street}, ${number} - ${neighborhood}, ${city}${cep ? `, CEP ${cep}` : ''}`;
 }
 
-async function fetchCep(cep) {
+async function fetchJson(url, timeout = 8000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
     try {
-        const viaCep = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { cache: 'no-store' });
-        if (viaCep.ok) {
-            const data = await viaCep.json();
-            if (!data.erro) return data;
-        }
-    } catch {
-        // O segundo provedor mantém a busca funcional se o ViaCEP estiver fora do ar.
+        const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error(`Consulta indisponível (${response.status})`);
+        return await response.json();
+    } finally {
+        clearTimeout(timer);
     }
-    const fallback = await fetch(`https://cep.awesomeapi.com.br/json/${cep}`, { cache: 'no-store' });
-    if (!fallback.ok) throw new Error('CEP não encontrado');
-    const data = await fallback.json();
+}
+
+async function fetchCep(cep) {
+    const [viaResult, coordinateResult] = await Promise.allSettled([
+        fetchJson(`https://viacep.com.br/ws/${cep}/json/`),
+        fetchJson(`https://cep.awesomeapi.com.br/json/${cep}`)
+    ]);
+    const viaCep = viaResult.status === 'fulfilled' && !viaResult.value.erro ? viaResult.value : null;
+    const coordinateData = coordinateResult.status === 'fulfilled' ? coordinateResult.value : null;
+    if (!viaCep && !coordinateData) throw new Error('CEP não encontrado');
     return {
-        logradouro: data.address || data.street || '',
-        bairro: data.district || data.neighborhood || '',
-        localidade: data.city || '',
-        uf: data.state || ''
+        logradouro: viaCep?.logradouro || coordinateData?.address || coordinateData?.street || '',
+        bairro: viaCep?.bairro || coordinateData?.district || coordinateData?.neighborhood || '',
+        localidade: viaCep?.localidade || coordinateData?.city || '',
+        uf: viaCep?.uf || coordinateData?.state || '',
+        latitude: Number(coordinateData?.lat),
+        longitude: Number(coordinateData?.lng)
     };
 }
 
 async function searchCep() {
+    clearTimeout(state.cepSearchTimer);
     const cep = dom.customerCep.value.replace(/\D/g, '');
     if (cep.length !== 8) {
         dom.customerCep.setAttribute('aria-invalid', 'true');
         setAddressStatus('Digite os 8 números do CEP.', 'error');
         return;
     }
+    if (dom.searchCepBtn.disabled) return;
     dom.customerCep.removeAttribute('aria-invalid');
     dom.searchCepBtn.disabled = true;
     dom.searchCepBtn.textContent = 'Buscando...';
@@ -729,7 +743,15 @@ async function searchCep() {
         dom.customerStreet.value = data.logradouro || '';
         dom.customerNeighborhood.value = data.bairro || '';
         dom.customerCity.value = [data.localidade, data.uf].filter(Boolean).join(' / ');
-        setAddressStatus('Endereço encontrado. Confira e informe o número.', 'success');
+        state.cepPoint = Number.isFinite(data.latitude) && Number.isFinite(data.longitude)
+            ? { cep, lat: data.latitude, lng: data.longitude }
+            : null;
+        setAddressStatus(
+            state.cepPoint
+                ? 'Endereço encontrado e taxa estimada pelo CEP. Informe o número para confirmar.'
+                : 'Endereço encontrado. Confira e informe o número.',
+            'success'
+        );
         dom.customerNumber.focus();
         scheduleDeliveryQuote(0);
     } catch (error) {
@@ -756,31 +778,65 @@ function scheduleDeliveryQuote(delay = 550) {
 
 async function calculateDeliveryQuote() {
     const address = fullAddress();
-    if (!address) return;
+    const cep = dom.customerCep.value.replace(/\D/g, '');
+    const cepPoint = state.cepPoint?.cep === cep ? state.cepPoint : null;
+    if (!address && !cepPoint) return;
     state.quoteController?.abort();
     state.quoteController = new AbortController();
+    const quoteController = state.quoteController;
+    let quoteTimeout = null;
     state.deliveryQuote = { status: 'pending', fee: 0, distance: null };
     renderTotals();
     setAddressStatus('Calculando a entrega...');
 
-    const query = `${address}, Brasil`;
+    const cityParts = dom.customerCity.value.split('/').map((part) => part.trim()).filter(Boolean);
+    const params = new URLSearchParams({
+        format: 'jsonv2',
+        limit: '1',
+        countrycodes: 'br',
+        street: `${dom.customerNumber.value.trim()} ${dom.customerStreet.value.trim()}`.trim(),
+        city: cityParts[0] || dom.customerCity.value.trim()
+    });
+    if (cityParts[1]) params.set('state', cityParts[1]);
+    const usePoint = (point, source, approximate = false) => {
+        const distance = haversineKm(STORE_LOCATION, point);
+        const fee = deliveryFeeFromDistance(distance);
+        if (fee === null) throw new Error('Distância inválida');
+        state.deliveryQuote = { status: 'ready', fee, distance, source, latitude: point.lat, longitude: point.lng };
+        setAddressStatus(
+            approximate
+                ? dom.customerNumber.value.trim()
+                    ? `Entrega estimada pela localização do CEP (${distance.toFixed(1)} km).`
+                    : `Taxa estimada pelo CEP (${distance.toFixed(1)} km). Informe o número para confirmar.`
+                : `Entrega calculada para ${distance.toFixed(1)} km.`,
+            'success'
+        );
+    };
+
+    if (!address && cepPoint) {
+        usePoint(cepPoint, 'cep', true);
+        renderTotals();
+        return;
+    }
+
     try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(query)}`;
+        quoteTimeout = setTimeout(() => quoteController.abort(), 8000);
+        const url = `https://nominatim.openstreetmap.org/search?${params}`;
         const response = await fetch(url, {
-            signal: state.quoteController.signal,
+            signal: quoteController.signal,
             headers: { 'Accept-Language': 'pt-BR' }
         });
         if (!response.ok) throw new Error('Falha na geocodificação');
         const data = await response.json();
         if (!Array.isArray(data) || !data.length) throw new Error('Endereço não localizado');
         const point = { lat: Number(data[0].lat), lng: Number(data[0].lon) };
-        const distance = haversineKm(STORE_LOCATION, point);
-        const fee = deliveryFeeFromDistance(distance);
-        if (fee === null) throw new Error('Distância inválida');
-        state.deliveryQuote = { status: 'ready', fee, distance, source: 'distance', latitude: point.lat, longitude: point.lng };
-        setAddressStatus(`Entrega calculada para ${distance.toFixed(1)} km.`, 'success');
+        usePoint(point, 'distance');
     } catch (error) {
-        if (error.name === 'AbortError') return;
+        if (error.name === 'AbortError' && state.quoteController !== quoteController) return;
+        if (cepPoint) {
+            usePoint(cepPoint, 'cep', true);
+            return;
+        }
         const neighborhoodFee = deliveryFeeFromNeighborhood(dom.customerNeighborhood.value);
         if (neighborhoodFee !== null) {
             state.deliveryQuote = { status: 'ready', fee: neighborhoodFee, distance: null, source: 'neighborhood' };
@@ -791,6 +847,7 @@ async function calculateDeliveryQuote() {
             setAddressStatus('Não foi possível calcular a entrega. Revise o endereço ou fale com a cozinha.', 'error');
         }
     } finally {
+        clearTimeout(quoteTimeout);
         renderTotals();
     }
 }
@@ -1240,7 +1297,13 @@ function installEvents() {
 
     dom.customerCep.addEventListener('input', () => {
         dom.customerCep.value = formatCep(dom.customerCep.value);
-        if (dom.customerCep.value.replace(/\D/g, '').length === 8) dom.customerCep.removeAttribute('aria-invalid');
+        const cep = dom.customerCep.value.replace(/\D/g, '');
+        if (state.cepPoint?.cep !== cep) state.cepPoint = null;
+        clearTimeout(state.cepSearchTimer);
+        if (cep.length === 8) {
+            dom.customerCep.removeAttribute('aria-invalid');
+            state.cepSearchTimer = setTimeout(searchCep, 400);
+        }
         scheduleDeliveryQuote();
     });
     dom.customerPhone.addEventListener('input', () => { dom.customerPhone.value = formatPhone(dom.customerPhone.value); });

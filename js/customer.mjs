@@ -10,8 +10,8 @@ import {
     statusLabel,
     unreadCount,
     validNextStatuses
-} from './account-core.mjs?v=2.5.0';
-import { formatPhone, haversineKm, money, normalizeText } from './core.mjs?v=2.5.0';
+} from './account-core.mjs?v=2.5.1';
+import { formatPhone, haversineKm, money, normalizeText } from './core.mjs?v=2.5.1';
 
 const VAPID_KEY = document.querySelector('meta[name="firebase-vapid-key"]')?.content.trim() || '';
 
