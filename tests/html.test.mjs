@@ -45,6 +45,14 @@ test('acompanhamento carrega mapa interativo', () => {
     assert.match(html, /id="orderTrackingDialog"/);
 });
 
+test('interface usa o sistema de ícones ilustrados sem pictogramas improvisados', () => {
+    assert.match(html, /imagens\/icones-site-atlas\.png/);
+    assert.match(html, /imagens\/icones-controles-atlas\.png/);
+    assert.match(html, /imagens\/jogo-itens-atlas\.png/);
+    assert.equal(/[♨⚙⌂♡♥🛵◷]/u.test(html), false);
+    assert.equal(/<svg|\.svg|data:image\/svg/i.test(html), false);
+});
+
 test('assets locais referenciados pelo HTML existem', async () => {
     const references = [...html.matchAll(/(?:href|src)="([^"#]+)"/g)]
         .map((match) => match[1])

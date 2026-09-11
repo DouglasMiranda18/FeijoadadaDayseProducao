@@ -20,8 +20,8 @@ import {
     paymentFee,
     reconcileCart,
     sortProducts
-} from './core.mjs?v=2.6.0';
-import { initCustomerExperience } from './customer.mjs?v=2.6.0';
+} from './core.mjs?v=2.7.0';
+import { initCustomerExperience } from './customer.mjs?v=2.7.0';
 
 const WHATSAPP_NUMBER = '5581987484019';
 const CART_STORAGE_KEY = 'feijoada-dayse-cart-v2';
@@ -176,7 +176,9 @@ function showToast(message, type = 'success') {
     clearTimeout(state.toastTimer);
     dom.toastMessage.textContent = message;
     dom.toast.classList.toggle('is-error', type === 'error');
-    dom.toast.querySelector('.toast__mark').textContent = type === 'error' ? '!' : '✓';
+    const mark = dom.toast.querySelector('.toast__mark');
+    mark.classList.toggle('site-icon--warning', type === 'error');
+    mark.classList.toggle('site-icon--success', type !== 'error');
     dom.toast.hidden = false;
     state.toastTimer = setTimeout(() => { dom.toast.hidden = true; }, 3600);
 }
@@ -294,7 +296,7 @@ function updateCartCounts() {
 function appendImage(container, { src, alt, className = '', loading = 'lazy', fallbackClass = 'image-fallback' }) {
     if (!src) {
         const fallback = createElement('div', fallbackClass);
-        fallback.innerHTML = '<span aria-hidden="true">♨</span><small>Foto chegando</small>';
+        fallback.innerHTML = '<span class="site-icon site-icon--menu" aria-hidden="true"></span><small>Foto chegando</small>';
         container.append(fallback);
         return fallback;
     }
@@ -305,7 +307,7 @@ function appendImage(container, { src, alt, className = '', loading = 'lazy', fa
     image.decoding = 'async';
     image.addEventListener('error', () => {
         const fallback = createElement('div', fallbackClass);
-        fallback.innerHTML = '<span aria-hidden="true">♨</span><small>Foto indisponível</small>';
+        fallback.innerHTML = '<span class="site-icon site-icon--menu" aria-hidden="true"></span><small>Foto indisponível</small>';
         image.replaceWith(fallback);
     }, { once: true });
     container.append(image);
@@ -369,12 +371,13 @@ function createProductCard(product) {
     const article = createElement('article', `product-card${product.availability ? '' : ' is-unavailable'}`);
     const media = createElement('div', 'product-card__media');
     appendImage(media, { src: product.image, alt: product.name });
-    const favorite = createElement('button', 'favorite-toggle', '♡');
+    const favorite = createElement('button', 'favorite-toggle');
     favorite.type = 'button';
     favorite.dataset.favoriteProduct = product.id;
     favorite.dataset.productName = product.name;
     favorite.setAttribute('aria-pressed', 'false');
     favorite.setAttribute('aria-label', `Adicionar ${product.name} aos favoritos`);
+    favorite.innerHTML = '<span class="site-icon site-icon--heart" aria-hidden="true"></span>';
     favorite.addEventListener('click', () => state.phase2?.toggleFavorite(product.id));
     media.append(favorite);
     const badge = createBadge(product);
@@ -647,7 +650,7 @@ function renderCart() {
     dom.clearCartBtn.hidden = empty;
     if (empty) {
         const container = createElement('div', 'empty-cart');
-        container.innerHTML = '<span aria-hidden="true">♨</span><strong>Sacola vazia</strong><p>Escolha um prato no cardápio e ele aparece aqui.</p>';
+        container.innerHTML = '<span class="site-icon site-icon--bag" aria-hidden="true"></span><strong>Sacola vazia</strong><p>Escolha um prato no cardápio e ele aparece aqui.</p>';
         dom.cartItems.append(container);
     } else {
         state.cart.forEach((item) => dom.cartItems.append(createCartItem(item)));
@@ -948,7 +951,7 @@ async function openGame() {
     if (!dom.orderHandoffDialog.hidden) closeOverlay(dom.orderHandoffDialog);
     openOverlay(dom.gameDialog, dom.closeGameBtn);
     if (!state.gamePromise) {
-        state.gamePromise = import('./game.mjs?v=2.6.0').then(({ createGame }) => createGame({
+        state.gamePromise = import('./game.mjs?v=2.7.0').then(({ createGame }) => createGame({
             canvas: document.querySelector('#gameCanvas'),
             scoreElement: document.querySelector('#gameScore'),
             bestElement: document.querySelector('#gameBest'),
@@ -1180,7 +1183,7 @@ async function initializeFirebase() {
     showMenuFeedback('Buscando o cardápio da cozinha...');
     dom.productGrid.setAttribute('aria-busy', 'true');
     try {
-        state.firebase = await import('./firebase.mjs?v=2.6.0');
+        state.firebase = await import('./firebase.mjs?v=2.7.0');
         state.unsubscribeProducts?.();
         state.unsubscribeSettings?.();
         state.unsubscribeProducts = state.firebase.subscribeProducts((products) => {

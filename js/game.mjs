@@ -29,6 +29,9 @@ export function createGame({
     const playerSprite = new Image();
     playerSprite.src = 'imagens/jogo-panela-corredora.png';
     playerSprite.addEventListener('load', () => draw(), { once: true });
+    const itemSprites = new Image();
+    itemSprites.src = 'imagens/jogo-itens-atlas.png';
+    itemSprites.addEventListener('load', () => draw(), { once: true });
     const storageKey = 'feijoada-dayse-game-best-v1';
     const soundStorageKey = 'feijoada-dayse-game-sound-v1';
     const state = {
@@ -402,90 +405,45 @@ export function createGame({
                 context.stroke();
             }
             context.restore();
-            return;
         }
+    }
+
+    function drawAtlasItem(column, row, x, y, width, height, { rotation = 0, glow = '', blur = 0, filter = 'none' } = {}) {
+        if (!itemSprites.complete || !itemSprites.naturalWidth) return;
+        const sourceWidth = itemSprites.naturalWidth / 2;
+        const sourceHeight = itemSprites.naturalHeight / 2;
         context.save();
-        context.translate(x, y);
-        context.fillStyle = '#f5bd49';
-        context.beginPath();
-        context.roundRect(3, 10, width - 6, height - 12, 7);
-        context.fill();
-        context.fillStyle = '#b4342f';
-        context.fillRect(0, 8, width, 8);
-        context.fillStyle = '#fff4de';
-        context.beginPath();
-        context.ellipse(width / 2, 9, width * 0.36, 5.5, 0, 0, Math.PI * 2);
-        context.fill();
-        context.strokeStyle = '#f5bd49';
-        context.lineWidth = 5;
-        context.beginPath();
-        context.arc(width - 1, 24, 11, -Math.PI / 2, Math.PI / 2);
-        context.stroke();
-        context.fillStyle = '#2e1013';
-        context.beginPath();
-        context.arc(width * 0.38, 25, 2.5, 0, Math.PI * 2);
-        context.arc(width * 0.62, 25, 2.5, 0, Math.PI * 2);
-        context.fill();
-        context.strokeStyle = '#2e1013';
-        context.lineWidth = 2;
-        context.beginPath();
-        context.arc(width / 2, 28, 7, 0.15, Math.PI - 0.15);
-        context.stroke();
+        context.translate(x + width / 2, y + height / 2);
+        context.rotate(rotation);
+        context.shadowColor = glow || 'rgba(0, 0, 0, 0.34)';
+        context.shadowBlur = blur || 7;
+        context.shadowOffsetY = glow ? 0 : 4;
+        context.filter = filter;
+        context.drawImage(itemSprites, column * sourceWidth, row * sourceHeight, sourceWidth, sourceHeight, -width / 2, -height / 2, width, height);
         context.restore();
     }
 
     function drawBean(bean) {
-        context.save();
-        context.translate(bean.x + bean.width / 2, bean.y + bean.height / 2);
-        context.rotate(bean.rotation);
-        context.fillStyle = bean.golden ? '#ffe071' : '#e9a837';
-        context.shadowColor = bean.golden ? '#ffe071' : 'rgba(0, 0, 0, 0.32)';
-        context.shadowBlur = bean.golden ? 16 : 5;
-        context.shadowOffsetY = bean.golden ? 0 : 3;
-        context.beginPath();
-        context.ellipse(0, 0, bean.width / 2, bean.height / 2, 0.5, 0, Math.PI * 2);
-        context.fill();
-        context.shadowColor = 'transparent';
-        context.fillStyle = 'rgba(255, 255, 255, 0.45)';
-        context.beginPath();
-        context.ellipse(-bean.width * 0.16, -bean.height * 0.18, bean.width * 0.1, bean.height * 0.09, 0.5, 0, Math.PI * 2);
-        context.fill();
-        context.strokeStyle = '#7b2825';
-        context.lineWidth = 3;
-        context.beginPath();
-        context.arc(-1, 0, bean.width * 0.24, -1.1, 1.65);
-        context.stroke();
-        context.restore();
+        const scale = bean.golden ? 1.45 : 1.32;
+        drawAtlasItem(0, 0, bean.x - bean.width * 0.16, bean.y - bean.height * 0.28, bean.width * scale, bean.width * scale, {
+            rotation: bean.rotation,
+            glow: bean.golden ? '#ffd459' : '',
+            blur: bean.golden ? 18 : 6,
+            filter: bean.golden ? 'sepia(0.6) saturate(2.1) brightness(1.28)' : 'none'
+        });
     }
 
     function drawPowerUp(power) {
-        context.save(); context.translate(power.x + 17, power.y + 17); context.rotate(power.rotation);
-        context.fillStyle = power.type === 'shield' ? '#74c5d6' : '#f2cf69'; context.strokeStyle = '#fff4de'; context.lineWidth = 3;
-        if (power.type === 'shield') { context.beginPath(); context.moveTo(0, -15); context.lineTo(14, -7); context.lineTo(10, 11); context.lineTo(0, 17); context.lineTo(-10, 11); context.lineTo(-14, -7); context.closePath(); context.fill(); context.stroke(); }
-        else { context.beginPath(); context.roundRect(-15, -11, 30, 22, 6); context.fill(); context.stroke(); context.fillStyle = '#7b2825'; context.font = '900 12px sans-serif'; context.textAlign = 'center'; context.fillText('×2', 0, 4); }
-        context.restore();
+        const column = power.type === 'shield' ? 0 : 1;
+        drawAtlasItem(column, 1, power.x - 7, power.y - 7, power.width + 14, power.height + 14, {
+            rotation: Math.sin(power.rotation) * 0.12,
+            glow: power.type === 'shield' ? '#77d8ee' : '#ffd45d',
+            blur: 16
+        });
     }
 
     function drawObstacle(obstacle) {
-        context.save();
-        context.translate(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2);
-        context.rotate(obstacle.rotation);
-        context.shadowColor = 'rgba(0, 0, 0, 0.4)';
-        context.shadowBlur = 8;
-        context.shadowOffsetY = 4;
-        context.fillStyle = '#a92f2b';
-        context.beginPath();
-        context.arc(0, 0, obstacle.width / 2, 0, Math.PI * 2);
-        context.fill();
-        context.shadowColor = 'transparent';
-        context.strokeStyle = '#f1d3a5';
-        context.lineWidth = 4;
-        context.beginPath();
-        context.arc(0, 0, obstacle.width * 0.33, 0, Math.PI * 2);
-        context.stroke();
-        context.fillStyle = '#f5bd49';
-        context.fillRect(-4, -obstacle.height * 0.68, 8, obstacle.height * 0.3);
-        context.restore();
+        drawAtlasItem(1, 0, obstacle.x - 7, obstacle.y - 7, obstacle.width + 14, obstacle.height + 14, { rotation: obstacle.rotation });
     }
 
     function draw() {

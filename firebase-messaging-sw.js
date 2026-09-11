@@ -1,6 +1,6 @@
 /* Somente assets públicos entram no cache. Pedidos, conta e respostas Firebase nunca são armazenados. */
-const CACHE_NAME = 'feijoada-dayse-static-v9';
-const STATIC_ASSETS = ['./', './Index.html', './style.css?v=2.6.0', './js/app.mjs', './js/core.mjs', './js/account-core.mjs', './js/customer.mjs', './js/firebase.mjs', './imagens/Feijoada%20Da%20Dayse(Logotipo).png', './imagens/jogo-panela-corredora.png'];
+const CACHE_NAME = 'feijoada-dayse-static-v10';
+const STATIC_ASSETS = ['./', './Index.html', './style.css?v=2.7.0', './js/app.mjs', './js/core.mjs', './js/account-core.mjs', './js/customer.mjs', './js/firebase.mjs', './imagens/Feijoada%20Da%20Dayse(Logotipo).png', './imagens/jogo-panela-corredora.png', './imagens/icones-site-atlas.png', './imagens/icones-controles-atlas.png', './imagens/jogo-itens-atlas.png'];
 
 self.addEventListener('install', (event) => event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener('activate', (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))).then(() => self.clients.claim())));

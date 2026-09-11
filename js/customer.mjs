@@ -10,8 +10,8 @@ import {
     statusLabel,
     unreadCount,
     validNextStatuses
-} from './account-core.mjs?v=2.6.0';
-import { formatPhone, haversineKm, money, normalizeText } from './core.mjs?v=2.6.0';
+} from './account-core.mjs?v=2.7.0';
+import { formatPhone, haversineKm, money, normalizeText } from './core.mjs?v=2.7.0';
 
 const VAPID_KEY = document.querySelector('meta[name="firebase-vapid-key"]')?.content.trim() || '';
 
@@ -110,7 +110,6 @@ export function initCustomerExperience(api) {
             button.classList.toggle('is-favorite', active);
             button.setAttribute('aria-pressed', String(active));
             button.setAttribute('aria-label', `${active ? 'Remover' : 'Adicionar'} ${button.dataset.productName || 'produto'} ${active ? 'dos' : 'aos'} favoritos`);
-            button.textContent = active ? '♥' : '♡';
         });
     }
 
@@ -397,8 +396,8 @@ export function initCustomerExperience(api) {
         const destination = destinationPoint(order);
         const map = window.L.map(host, { zoomControl: true, attributionControl: true }).setView(point, 16);
         window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
-        const courierIcon = window.L.divIcon({ className: 'delivery-map-marker', html: '<span aria-hidden="true">🛵</span>', iconSize: [46, 46], iconAnchor: [23, 23] });
-        const homeIcon = window.L.divIcon({ className: 'delivery-map-marker is-home', html: '<span aria-hidden="true">⌂</span>', iconSize: [40, 40], iconAnchor: [20, 20] });
+        const courierIcon = window.L.divIcon({ className: 'delivery-map-marker', html: '<span class="site-icon site-icon--courier" aria-hidden="true"></span>', iconSize: [46, 46], iconAnchor: [23, 23] });
+        const homeIcon = window.L.divIcon({ className: 'delivery-map-marker is-home', html: '<span class="site-icon site-icon--home" aria-hidden="true"></span>', iconSize: [40, 40], iconAnchor: [20, 20] });
         const marker = window.L.marker(point, { icon: courierIcon, title: 'Posição do entregador', alt: 'Posição do entregador' }).addTo(map);
         const accuracy = window.L.circle(point, { radius: Math.max(5, Number(state.deliveryLocation.accuracy) || 5), color: '#661f25', fillColor: '#f5bd49', fillOpacity: 0.15, weight: 1 }).addTo(map);
         const trail = window.L.polyline([], { color: '#661f25', opacity: 0.65, weight: 5 }).addTo(map);
@@ -428,7 +427,9 @@ export function initCustomerExperience(api) {
             const courierName = order.courier?.name || 'Seu entregador';
             const locationHeading = el('div', 'delivery-location__heading');
             const locationCopy = el('div'); locationCopy.append(el('h3', '', order.status === 'arrived' ? `${courierName} chegou` : `${courierName} está a caminho`), el('p', '', order.status === 'arrived' ? 'Vá ao encontro do entregador.' : 'A posição é atualizada enquanto o navegador do entregador permanece ativo.'));
-            locationHeading.append(el('span', 'delivery-avatar', '🛵'), locationCopy); location.append(locationHeading);
+            const avatar = el('span', 'delivery-avatar');
+            avatar.innerHTML = '<span class="site-icon site-icon--courier" aria-hidden="true"></span>';
+            locationHeading.append(avatar, locationCopy); location.append(locationHeading);
             if (state.deliveryLocation?.latitude != null && state.deliveryLocation?.longitude != null) {
                 const meta = el('p', 'delivery-location__meta'); const distance = el('strong', 'delivery-location__distance');
                 const mapHost = el('div', 'delivery-map'); mapHost.setAttribute('role', 'application'); mapHost.setAttribute('aria-label', 'Mapa ao vivo da entrega');

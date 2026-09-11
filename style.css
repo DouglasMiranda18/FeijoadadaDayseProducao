@@ -2213,9 +2213,10 @@ td:last-child {
 }
 
 .game-start-bean::after {
-    content: "♨";
-    color: var(--ink);
-    font-size: 1.8rem;
+    content: "";
+    width: 2.7rem;
+    height: 2.7rem;
+    background: url("imagens/icones-site-atlas.png") 66.666% 0 / 400% 400% no-repeat;
 }
 
 .game-controls {
@@ -3404,5 +3405,201 @@ td:last-child {
     .game-start-mascot {
         grid-row: 1 / 4;
         width: min(24vh, 7rem);
+    }
+}
+
+/* Sistema visual ilustrado — atlas próprio da Feijoada da Dayse */
+.site-icon,
+.control-icon {
+    display: inline-block;
+    flex: 0 0 auto;
+    background-repeat: no-repeat;
+    color: transparent;
+    font-size: 0;
+    line-height: 0;
+    pointer-events: none;
+}
+
+.site-icon {
+    width: 1.65rem;
+    height: 1.65rem;
+    background-image: url("imagens/icones-site-atlas.png");
+    background-size: 400% 400%;
+}
+
+.site-icon--home { background-position: 0 0; }
+.site-icon--menu { background-position: 33.333% 0; }
+.site-icon--game { background-position: 66.666% 0; }
+.site-icon--account { background-position: 100% 0; }
+.site-icon--bag { background-position: 0 33.333%; }
+.site-icon--bell { background-position: 33.333% 33.333%; }
+.site-icon--gear { background-position: 66.666% 33.333%; }
+.site-icon--clock { background-position: 100% 33.333%; }
+.site-icon--location { background-position: 0 66.666%; }
+.site-icon--heart { background-position: 33.333% 66.666%; }
+.site-icon--success { background-position: 66.666% 66.666%; }
+.site-icon--warning { background-position: 100% 66.666%; }
+.site-icon--phone { background-position: 0 100%; }
+.site-icon--chat { background-position: 33.333% 100%; }
+.site-icon--courier { background-position: 66.666% 100%; }
+.site-icon--arrow { background-position: 100% 100%; }
+
+.control-icon {
+    width: 1.45rem;
+    height: 1.45rem;
+    background-image: url("imagens/icones-controles-atlas.png");
+    background-size: 200% 200%;
+}
+
+.control-icon--close { background-position: 0 0; }
+.control-icon--plus { background-position: 100% 0; }
+.control-icon--minus { background-position: 0 100%; }
+.control-icon--up { background-position: 100% 100%; }
+.control-icon--left { background-position: 100% 100%; transform: rotate(-90deg); }
+.control-icon--down { background-position: 100% 100%; transform: rotate(180deg); }
+.control-icon--right { background-position: 100% 100%; transform: rotate(90deg); }
+
+.header-icon-button > .site-icon,
+.admin-header-trigger > .site-icon,
+.cart-trigger__icon.site-icon {
+    width: 1.65rem;
+    height: 1.65rem;
+}
+
+.header-icon-button.has-new > .site-icon {
+    filter: drop-shadow(0 0 0.35rem rgba(245, 189, 73, 0.9));
+}
+
+.service-notes li {
+    align-items: center;
+}
+
+.service-notes .site-icon {
+    width: 1.7rem;
+    height: 1.7rem;
+}
+
+.text-link .site-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    transition: transform 160ms ease;
+}
+
+.text-link:hover .site-icon {
+    transform: translateX(0.2rem);
+}
+
+.contact-actions a {
+    display: grid;
+    grid-template-columns: 2.7rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.contact-actions .site-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    transition: transform 160ms ease;
+}
+
+.contact-actions a:hover .site-icon {
+    transform: translateY(-0.12rem) scale(1.05);
+}
+
+.opening-card {
+    grid-template-columns: auto auto minmax(0, 1fr);
+}
+
+.opening-card__icon {
+    width: 3.5rem;
+    height: 3.5rem;
+}
+
+.mobile-dock .site-icon {
+    display: inline-block;
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.icon-button,
+.quantity-control button,
+.game-controls button {
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-button .control-icon {
+    width: 1.55rem;
+    height: 1.55rem;
+}
+
+.quantity-control .control-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.image-fallback .site-icon,
+.empty-cart .site-icon {
+    width: 4.5rem;
+    height: 4.5rem;
+}
+
+.favorite-toggle .site-icon {
+    width: 1.8rem;
+    height: 1.8rem;
+    transition: transform 160ms ease, filter 160ms ease;
+}
+
+.favorite-toggle.is-favorite .site-icon {
+    filter: brightness(0) invert(1);
+    transform: scale(1.08);
+}
+
+.handoff-pan.site-icon {
+    width: 4.2rem;
+    height: 4.2rem;
+    background-color: transparent;
+    border-radius: 0;
+}
+
+.game-controls .control-icon {
+    width: 2rem;
+    height: 2rem;
+    filter: brightness(0) invert(1);
+}
+
+.game-controls button.is-pressed .control-icon {
+    filter: none;
+}
+
+.toast__mark.site-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0;
+    background-color: transparent;
+}
+
+.delivery-avatar .site-icon {
+    width: 2.65rem;
+    height: 2.65rem;
+}
+
+.delivery-map-marker .site-icon {
+    width: 2.45rem;
+    height: 2.45rem;
+}
+
+.delivery-map-marker.is-home .site-icon {
+    width: 2.15rem;
+    height: 2.15rem;
+}
+
+@media (max-width: 52rem) {
+    .opening-card {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .opening-card__icon {
+        display: none;
     }
 }
