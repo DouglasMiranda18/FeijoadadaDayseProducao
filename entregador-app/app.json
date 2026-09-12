@@ -13,7 +13,10 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "A localização mostra ao cliente onde está a entrega em andamento.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Durante uma entrega ativa, sua localização continua sendo enviada mesmo com o aplicativo em segundo plano.",
-        "UIBackgroundModes": ["location", "remote-notification"]
+        "UIBackgroundModes": [
+          "location",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -22,14 +25,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#fff8ef"
       },
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION",
-        "POST_NOTIFICATIONS"
-      ]
+      "permissions": ["POST_NOTIFICATIONS"]
     },
     "plugins": [
       [
@@ -48,6 +44,12 @@
           "color": "#c44b16"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7f8b9b47-a813-432f-811b-8b5bfe7d2ea1"
+      }
+    },
+    "owner": "zigorx22"
   }
 }

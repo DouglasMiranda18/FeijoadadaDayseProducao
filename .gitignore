@@ -11,3 +11,4 @@ entregador-app/.expo/
 entregador-app/android/
 entregador-app/ios/
 entregador-app/.env.local
+entregador-app/releases/*.apk
