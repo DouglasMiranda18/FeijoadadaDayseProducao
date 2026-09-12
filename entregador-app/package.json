@@ -1,0 +1,34 @@
+{
+  "name": "feijoada-da-dayse-entregador",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@firebase/auth": "1.13.6",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "57.0.22",
+    "expo-linear-gradient": "57.0.2",
+    "expo-linking": "57.0.10",
+    "expo-location": "57.0.17",
+    "expo-notifications": "57.0.18",
+    "expo-status-bar": "57.0.1",
+    "expo-system-ui": "~57.0.4",
+    "expo-task-manager": "57.0.17",
+    "firebase": "12.19.0",
+    "lucide-react-native": "1.45.0",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-maps": "1.27.2",
+    "react-native-svg": "15.15.4"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.10",
+    "typescript": "~6.0.2"
+  }
+}

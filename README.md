@@ -2,6 +2,10 @@
 
 Aplicação web responsiva da Feijoada da Dayse. Esta pasta parte da interface modernizada da fase 1 e acrescenta contas de clientes, pedidos acompanháveis, notificações, rankings, fidelidade, jogo ampliado, painel operacional e estrutura segura no Firebase.
 
+## Aplicativo do entregador
+
+O aplicativo nativo exclusivo para entregadores está em [`entregador-app`](./entregador-app). Ele usa o mesmo Firebase do site, funciona em Android e iPhone e mantém o GPS ativo em segundo plano durante uma entrega. As instruções de compilação estão no README da própria pasta.
+
 ## Executar localmente
 
 O frontend é estático e não precisa de build. Sirva a raiz por HTTP:

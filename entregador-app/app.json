@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Feijoada da Dayse Entregador",
+    "slug": "feijoada-da-dayse-entregador",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "feijoadadayseentregador",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.feijoadadadayse.entregador",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "A localização mostra ao cliente onde está a entrega em andamento.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Durante uma entrega ativa, sua localização continua sendo enviada mesmo com o aplicativo em segundo plano.",
+        "UIBackgroundModes": ["location", "remote-notification"]
+      }
+    },
+    "android": {
+      "package": "com.feijoadadadayse.entregador",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#fff8ef"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permita a localização para acompanhar a entrega.",
+          "locationAlwaysAndWhenInUsePermission": "A localização é compartilhada somente durante uma entrega ativa.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#c44b16"
+        }
+      ]
+    ]
+  }
+}
