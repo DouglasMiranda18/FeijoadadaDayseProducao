@@ -1,4 +1,4 @@
-import { normalizeProduct } from './core.mjs?v=2.7.1';
+import { normalizeProduct } from './core.mjs?v=2.7.2';
 
 const firebaseConfig = Object.freeze({
     apiKey: 'AIzaSyC1zIakJQ0YZSFDNKl8l_K39ajNeAbRtbU',
@@ -266,6 +266,7 @@ export function startCourierLocation(orderId, onData, onError) {
     const ref = realtimeDb.ref(`activeDeliveries/${orderId}`);
     const trail = [];
     let lastTrailPoint = null;
+    let lastPayload = null;
     const distanceMeters = (a, b) => {
         if (!a || !b) return Infinity;
         const toRad = (value) => value * Math.PI / 180;
@@ -287,9 +288,16 @@ export function startCourierLocation(orderId, onData, onError) {
             accuracy: position.coords.accuracy, heading: position.coords.heading ?? null, speed: position.coords.speed ?? null,
             updatedAt: firebase.database.ServerValue.TIMESTAMP, trail
         };
+        lastPayload = payload;
         ref.set(payload).then(() => onData?.(payload)).catch(onError);
     }, onError, { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
-    return () => { navigator.geolocation.clearWatch(watchId); };
+    const keepAlive = () => {
+        if (!lastPayload || !navigator.onLine) return;
+        ref.update({ updatedAt: firebase.database.ServerValue.TIMESTAMP }).catch(onError);
+    };
+    const heartbeatId = window.setInterval(keepAlive, 25000);
+    window.addEventListener('online', keepAlive);
+    return () => { navigator.geolocation.clearWatch(watchId); window.clearInterval(heartbeatId); window.removeEventListener('online', keepAlive); };
 }
 
 export function subscribeCustomers(onData, onError) {

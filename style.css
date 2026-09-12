@@ -3071,6 +3071,13 @@ td:last-child {
 .customer-stats { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .customer-stats span { background: var(--paper); border-radius: 999px; font-size: 0.78rem; font-weight: 800; padding: 0.35rem 0.65rem; }
 .loyalty-settings { display: grid; gap: 1rem; max-width: 42rem; }
+.loyalty-explainer { background: var(--paper); border-left: 0.3rem solid var(--sun); padding: 1rem; }
+.loyalty-explainer strong { color: var(--wine-dark); display: block; margin-bottom: 0.35rem; }
+.loyalty-explainer p { color: var(--ink-soft); font-size: 0.86rem; margin: 0.35rem 0; }
+.settings-group { border: 1px solid var(--line); display: grid; gap: 1rem; margin: 0; padding: 1rem; }
+.settings-group legend { color: var(--wine-dark); font-family: var(--display); font-size: 1.2rem; padding: 0 0.4rem; }
+.settings-group > small { color: var(--muted); line-height: 1.5; }
+.courier-location-note { background: rgba(68, 116, 74, 0.1); border-left: 0.25rem solid var(--leaf); color: var(--ink-soft); font-size: 0.8rem; line-height: 1.45; margin: 0.9rem 0 0; padding: 0.7rem 0.8rem; }
 .store-mode-control { display: grid; gap: 0.4rem; margin-left: auto; min-width: min(31rem, 100%); }
 .store-mode-control > strong { color: var(--ink); font-size: 0.82rem; }
 .store-mode-control > small { color: var(--muted); font-size: 0.76rem; }
@@ -3592,6 +3599,27 @@ td:last-child {
 .delivery-map-marker.is-home .site-icon {
     width: 2.15rem;
     height: 2.15rem;
+}
+
+/* Ícones vetoriais Lucide; o atlas permanece apenas como fallback se o CDN estiver indisponível. */
+.has-lucide .site-icon,
+.has-lucide .control-icon {
+    background-image: none;
+    color: inherit;
+    font-size: inherit;
+    stroke: currentColor;
+}
+
+.has-lucide .control-icon--left,
+.has-lucide .control-icon--down,
+.has-lucide .control-icon--right {
+    transform: none;
+}
+
+.has-lucide .game-controls .control-icon,
+.has-lucide .game-controls button.is-pressed .control-icon,
+.has-lucide .favorite-toggle.is-favorite .site-icon {
+    filter: none;
 }
 
 @media (max-width: 52rem) {

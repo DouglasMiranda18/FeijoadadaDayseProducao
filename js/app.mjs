@@ -1,3 +1,4 @@
+import './icons.mjs?v=2.7.2';
 import {
     BADGE_LABELS,
     CATEGORY_LABELS,
@@ -20,8 +21,8 @@ import {
     paymentFee,
     reconcileCart,
     sortProducts
-} from './core.mjs?v=2.7.1';
-import { initCustomerExperience } from './customer.mjs?v=2.7.1';
+} from './core.mjs?v=2.7.2';
+import { initCustomerExperience } from './customer.mjs?v=2.7.2';
 
 const WHATSAPP_NUMBER = '5581987484019';
 const CART_STORAGE_KEY = 'feijoada-dayse-cart-v2';
@@ -951,7 +952,7 @@ async function openGame() {
     if (!dom.orderHandoffDialog.hidden) closeOverlay(dom.orderHandoffDialog);
     openOverlay(dom.gameDialog, dom.closeGameBtn);
     if (!state.gamePromise) {
-        state.gamePromise = import('./game.mjs?v=2.7.1').then(({ createGame }) => createGame({
+        state.gamePromise = import('./game.mjs?v=2.7.2').then(({ createGame }) => createGame({
             canvas: document.querySelector('#gameCanvas'),
             scoreElement: document.querySelector('#gameScore'),
             bestElement: document.querySelector('#gameBest'),
@@ -1183,7 +1184,7 @@ async function initializeFirebase() {
     showMenuFeedback('Buscando o cardápio da cozinha...');
     dom.productGrid.setAttribute('aria-busy', 'true');
     try {
-        state.firebase = await import('./firebase.mjs?v=2.7.1');
+        state.firebase = await import('./firebase.mjs?v=2.7.2');
         state.unsubscribeProducts?.();
         state.unsubscribeSettings?.();
         state.unsubscribeProducts = state.firebase.subscribeProducts((products) => {

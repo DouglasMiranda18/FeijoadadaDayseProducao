@@ -10,10 +10,11 @@ import {
     statusLabel,
     unreadCount,
     validNextStatuses
-} from './account-core.mjs?v=2.7.1';
-import { formatPhone, haversineKm, money, normalizeText } from './core.mjs?v=2.7.1';
+} from './account-core.mjs?v=2.7.2';
+import { formatPhone, haversineKm, money, normalizeText } from './core.mjs?v=2.7.2';
 
 const VAPID_KEY = document.querySelector('meta[name="firebase-vapid-key"]')?.content.trim() || '';
+const ACTIVE_DELIVERY_STORAGE_KEY = 'feijoada-dayse-active-courier-delivery';
 
 function el(tag, className = '', text) {
     const node = document.createElement(tag);
@@ -49,7 +50,7 @@ export function initCustomerExperience(api) {
     const state = {
         user: null, profile: null, isAdmin: false, isCourier: false, authMode: 'login', accountView: 'overview', addresses: [], favorites: [], orders: [], courierOrders: [], notifications: [],
         leaderboards: { game_weekly: [], game_all: [], customers_monthly: [], customers_all: [] }, publicRanking: 'game_weekly', adminOrders: [], customers: [], gameSession: null,
-        settings: {}, pendingDeepLinkOrder: new URLSearchParams(location.search).get('pedido') || '', adminOrderIds: null, deliveryLocation: null, deliveryMap: null, trackedLocationOrderId: '', trackedLocationUnsubscribe: null, locationStops: new Map(),
+        settings: {}, pendingDeepLinkOrder: new URLSearchParams(location.search).get('pedido') || '', adminOrderIds: null, deliveryLocation: null, deliveryMap: null, trackedLocationOrderId: '', trackedLocationUnsubscribe: null, locationStops: new Map(), activeLocationOrderId: '', wakeLock: null,
         unsubscribers: [], adminUnsubscribers: []
     };
 
@@ -159,7 +160,7 @@ export function initCustomerExperience(api) {
         state.isAdmin = context.isAdmin;
         state.isCourier = context.isCourier;
         document.querySelectorAll('[data-courier-only]').forEach((item) => { item.hidden = !state.isCourier; });
-        if (user && state.isCourier) state.unsubscribers.push(firebase.subscribeCourierOrders(user.uid, (orders) => { state.courierOrders = orders; renderAccountIfOpen(); renderTrackingIfOpen(); }, api.handleError));
+        if (user && state.isCourier) state.unsubscribers.push(firebase.subscribeCourierOrders(user.uid, (orders) => { state.courierOrders = orders; resumeSavedLocationSharing(orders); renderAccountIfOpen(); renderTrackingIfOpen(); }, api.handleError));
         api.onAuthContext(context);
         syncHeader(); syncFavoriteButtons(); renderActiveOrder();
         if (!user && !dom.accountDrawer.hidden) closeAccount();
@@ -263,7 +264,8 @@ export function initCustomerExperience(api) {
             const progress = el('div', 'courier-progress');
             const next = order.status === 'ready' ? ['out_for_delivery', 'Iniciar entrega'] : order.status === 'out_for_delivery' ? ['arrived', 'Cheguei ao endereço'] : order.status === 'arrived' ? ['delivered', 'Marcar como entregue'] : null;
             if (next) { const button = el('button', `button ${next[0] === 'arrived' ? 'button--sun' : 'button--red'}`, next[1]); button.type = 'button'; button.dataset.courierOrderStatus = next[0]; button.dataset.orderId = order.id; progress.append(button); }
-            card.append(heading); if (beverageReminder) card.append(beverageReminder); card.append(contact, contacts, progress); container.append(card);
+            const locationNote = order.status === 'out_for_delivery' ? el('p', 'courier-location-note', 'Mantenha esta página aberta durante a rota. Quando permitido pelo aparelho, a tela ficará ligada e o GPS será retomado automaticamente ao voltar.') : null;
+            card.append(heading); if (beverageReminder) card.append(beverageReminder); card.append(contact, contacts); if (locationNote) card.append(locationNote); card.append(progress); container.append(card);
         });
     }
 
@@ -665,7 +667,7 @@ export function initCustomerExperience(api) {
         try {
             const result = await firebase.updateCourierDelivery({ orderId, status });
             if (status === 'out_for_delivery') startLocationSharing(orderId);
-            if (['arrived', 'delivered'].includes(status)) { state.locationStops.get(orderId)?.(); state.locationStops.delete(orderId); }
+            if (['arrived', 'delivered'].includes(status)) stopLocationSharing(orderId);
             const sent = Number(result?.push?.sent) || 0;
             api.showToast(status === 'arrived' ? `Cliente avisado${sent ? ' por notificação push' : ' dentro da conta'}.` : `${friendlyOrderId(orderId)}: ${statusLabel(status)}.`);
         } catch (error) { api.showToast(firebase.firebaseErrorMessage(error, 'atualizar a entrega'), 'error'); }
@@ -686,13 +688,57 @@ export function initCustomerExperience(api) {
         return performCourierOrderUpdate(orderId, status, button);
     }
 
-    function startLocationSharing(orderId) {
+    async function acquireWakeLock() {
+        if (!state.activeLocationOrderId || !('wakeLock' in navigator) || document.visibilityState !== 'visible' || state.wakeLock) return;
+        try {
+            const lock = await navigator.wakeLock.request('screen');
+            if (!state.activeLocationOrderId) { await lock.release(); return; }
+            state.wakeLock = lock;
+            lock.addEventListener('release', () => { if (state.wakeLock === lock) state.wakeLock = null; });
+        } catch { /* Alguns aparelhos não permitem Wake Lock; o GPS continua com a proteção disponível. */ }
+    }
+
+    function stopLocationSharing(orderId) {
+        state.locationStops.get(orderId)?.();
+        state.locationStops.delete(orderId);
+        if (state.activeLocationOrderId === orderId) {
+            state.activeLocationOrderId = '';
+            try { localStorage.removeItem(ACTIVE_DELIVERY_STORAGE_KEY); } catch { /* Armazenamento privado pode estar bloqueado. */ }
+            state.wakeLock?.release?.().catch(() => {});
+            state.wakeLock = null;
+        }
+    }
+
+    function resumeSavedLocationSharing(orders) {
+        let savedOrderId = '';
+        try { savedOrderId = localStorage.getItem(ACTIVE_DELIVERY_STORAGE_KEY) || ''; } catch { return; }
+        if (!savedOrderId) return;
+        const active = orders.find((order) => order.id === savedOrderId && order.status === 'out_for_delivery');
+        if (active) startLocationSharing(savedOrderId, true);
+        else {
+            try { localStorage.removeItem(ACTIVE_DELIVERY_STORAGE_KEY); } catch { /* Armazenamento privado pode estar bloqueado. */ }
+        }
+    }
+
+    function startLocationSharing(orderId, resumed = false) {
+        state.activeLocationOrderId = orderId;
+        try { localStorage.setItem(ACTIVE_DELIVERY_STORAGE_KEY, orderId); } catch { /* O rastreamento ainda funciona sem persistência. */ }
+        acquireWakeLock();
         if (state.locationStops.has(orderId)) return;
         try {
             const stop = firebase.startCourierLocation(orderId, () => renderAccountIfOpen(), (error) => api.showToast(firebase.firebaseErrorMessage(error, 'enviar sua localização'), 'error'));
             state.locationStops.set(orderId, stop); renderAccountIfOpen(); api.showToast('Localização ao vivo ativada durante esta entrega.');
-        } catch (error) { api.showToast(firebase.firebaseErrorMessage(error, 'ativar a localização'), 'error'); }
+        } catch (error) {
+            stopLocationSharing(orderId);
+            if (!resumed) api.showToast(firebase.firebaseErrorMessage(error, 'ativar a localização'), 'error');
+        }
     }
+
+    const resumeCourierProtection = () => {
+        if (document.visibilityState === 'visible' && state.activeLocationOrderId) acquireWakeLock();
+    };
+    document.addEventListener('visibilitychange', resumeCourierProtection);
+    window.addEventListener('pageshow', resumeCourierProtection);
 
     async function handleAccountSubmit(event) {
         const form = event.target;
@@ -766,6 +812,6 @@ export function initCustomerExperience(api) {
             dom.gameSeasonName.value = settings.game?.seasonName || '';
             renderAccountIfOpen();
         },
-        destroy: () => { unsubscribeAuth?.(); unsubscribeForegroundPush?.(); state.trackedLocationUnsubscribe?.(); state.locationStops.forEach((stop) => stop()); cleanup(state.unsubscribers); cleanup(state.adminUnsubscribers); }
+        destroy: () => { unsubscribeAuth?.(); unsubscribeForegroundPush?.(); state.trackedLocationUnsubscribe?.(); state.locationStops.forEach((stop) => stop()); state.wakeLock?.release?.().catch(() => {}); document.removeEventListener('visibilitychange', resumeCourierProtection); window.removeEventListener('pageshow', resumeCourierProtection); cleanup(state.unsubscribers); cleanup(state.adminUnsubscribers); }
     };
 }

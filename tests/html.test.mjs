@@ -45,12 +45,20 @@ test('acompanhamento carrega mapa interativo', () => {
     assert.match(html, /id="orderTrackingDialog"/);
 });
 
-test('interface usa o sistema de ícones ilustrados sem pictogramas improvisados', () => {
+test('interface usa ícones vetoriais limpos com atlas apenas como contingência', () => {
+    assert.match(html, /lucide@0\.468\.0/);
     assert.match(html, /imagens\/icones-site-atlas\.png/);
     assert.match(html, /imagens\/icones-controles-atlas\.png/);
     assert.match(html, /imagens\/jogo-itens-atlas\.png/);
     assert.equal(/[♨⚙⌂♡♥🛵◷]/u.test(html), false);
     assert.equal(/<svg|\.svg|data:image\/svg/i.test(html), false);
+});
+
+test('painel explica fidelidade, pontos e ranking sem prometer desconto', () => {
+    assert.match(html, /O que esta área controla\?/);
+    assert.match(html, /pontos não dão desconto automaticamente/);
+    assert.match(html, /Programa de fidelidade/);
+    assert.match(html, /Jogo Corre, Feijão!/);
 });
 
 test('assets locais referenciados pelo HTML existem', async () => {

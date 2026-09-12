@@ -21,15 +21,16 @@
     <link rel="preload" as="image" href="imagens/icones-site-atlas.png">
     <link rel="preload" as="image" href="imagens/icones-controles-atlas.png">
     <link rel="preload" as="image" href="imagens/jogo-itens-atlas.png">
-    <link rel="stylesheet" href="style.css?v=2.7.1">
+    <link rel="stylesheet" href="style.css?v=2.7.2">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous" defer></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" crossorigin="anonymous" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js" defer></script>
-    <script type="module" src="js/app.mjs?v=2.7.1"></script>
+    <script type="module" src="js/app.mjs?v=2.7.2"></script>
 </head>
 <body>
     <a class="skip-link" href="#cardapio">Pular para o cardápio</a>
@@ -330,11 +331,23 @@
                         </section>
                         <section data-admin-panel="settings" hidden>
                             <form class="admin-card loyalty-settings" id="loyaltySettingsForm">
-                                <h3>Fidelidade e temporada</h3>
-                                <label class="check-field"><input id="loyaltyEnabled" type="checkbox"> Ativar Feijõezinhos</label>
-                                <label class="field">Pontos por pedido concluído<input id="loyaltyPoints" type="number" min="0" max="10000" value="10"></label>
-                                <label class="check-field"><input id="gameRankingEnabled" type="checkbox"> Ranking do jogo ativo</label>
-                                <label class="field">Nome da temporada<input id="gameSeasonName" type="text" maxlength="60" placeholder="Temporada da Feijoada"></label>
+                                <h3>Fidelidade e jogo</h3>
+                                <div class="loyalty-explainer">
+                                    <strong>O que esta área controla?</strong>
+                                    <p>Quando um pedido é marcado como entregue, o cliente ganha Feijõezinhos. Eles aparecem na conta e ajudam a acompanhar os clientes mais fiéis.</p>
+                                    <p><b>Importante:</b> hoje os pontos não dão desconto automaticamente. Você pode usá-los como referência para criar brindes ou cupons depois.</p>
+                                </div>
+                                <fieldset class="settings-group">
+                                    <legend>Programa de fidelidade</legend>
+                                    <label class="check-field"><input id="loyaltyEnabled" type="checkbox"> Dar Feijõezinhos em pedidos entregues</label>
+                                    <label class="field">Quantidade por pedido entregue<input id="loyaltyPoints" type="number" min="0" max="10000" value="10"></label>
+                                    <small>Os níveis “Chegando agora”, “Amigo da casa”, “Fã da feijoada” e “Da panela” são calculados pela quantidade de pedidos concluídos.</small>
+                                </fieldset>
+                                <fieldset class="settings-group">
+                                    <legend>Jogo Corre, Feijão!</legend>
+                                    <label class="check-field"><input id="gameRankingEnabled" type="checkbox"> Mostrar ranking público do jogo</label>
+                                    <label class="field">Nome da temporada do ranking<input id="gameSeasonName" type="text" maxlength="60" placeholder="Temporada da Feijoada"></label>
+                                </fieldset>
                                 <button class="button button--red" type="submit">Salvar configurações</button>
                             </form>
                         </section>
