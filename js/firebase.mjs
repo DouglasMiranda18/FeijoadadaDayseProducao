@@ -1,4 +1,4 @@
-import { normalizeProduct } from './core.mjs?v=2.7.0';
+import { normalizeProduct } from './core.mjs?v=2.7.1';
 
 const firebaseConfig = Object.freeze({
     apiKey: 'AIzaSyC1zIakJQ0YZSFDNKl8l_K39ajNeAbRtbU',
@@ -321,7 +321,7 @@ export async function enablePush(uid, vapidKey) {
     }
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') throw Object.assign(new Error('Permissão de notificação não concedida.'), { code: 'messaging/permission-blocked' });
-    const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js', { updateViaCache: 'none' });
     const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: registration });
     if (!token) throw new Error('Não foi possível registrar este aparelho.');
     const tokenId = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
