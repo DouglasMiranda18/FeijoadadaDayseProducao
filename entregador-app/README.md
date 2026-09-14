@@ -32,4 +32,12 @@ Para iPhone é necessário um Mac com Xcode, ou uma conta Expo/EAS para compilar
 
 ## Comportamento do GPS
 
+## Mapa nativo Android
+
+Ative Maps SDK for Android no Google Cloud. Crie uma chave restrita a essa API, ao pacote `com.feijoadadadayse.entregador` e ao SHA-1 da assinatura EAS. Configure `ANDROID_GOOGLE_MAPS_API_KEY` como variável sensitive no ambiente EAS preview/production e, para desenvolvimento, em `.env.local` (ignorado pelo Git). Não coloque a chave no repositório.
+
+O plugin injeta a chave no manifesto nativo; uma mudança exige gerar e instalar um novo APK, não apenas atualizar o site. Builds Android na nuvem sem a variável são bloqueados. O iOS usa o mapa padrão da Apple.
+
+## Continuidade do rastreamento
+
 A localização é iniciada somente depois de tocar em **Iniciar entrega** e conceder a permissão “Sempre”. Ela para ao tocar em **Cheguei ao endereço** ou **Confirmar entrega**. Android e iOS podem interromper qualquer aplicativo se o usuário escolher “Forçar parada”; no Android, desativar a otimização de bateria para este aplicativo melhora a continuidade em aparelhos mais agressivos.

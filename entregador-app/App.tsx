@@ -4,6 +4,7 @@ import {
   SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
 import MapView, { Marker, Polyline } from 'react-native-maps';
@@ -288,12 +289,12 @@ function DeliveryScreen({ order, orders, tracked, onTrackChange, onSelect }: Del
         ])}><Navigation fill="#fff" color="#fff" size={22} /><Text style={styles.routeButtonText}>Abrir rota</Text><Route color="#fff" size={21} /></Pressable>
 
         <View style={styles.mapCard}>
-          <MapView ref={mapRef} style={styles.map} initialRegion={region} region={region} showsCompass showsMyLocationButton={false} toolbarEnabled={false}>
+          {Platform.OS !== 'android' || Constants.expoConfig?.extra?.androidMapsConfigured === true ? <MapView ref={mapRef} style={styles.map} initialRegion={region} region={region} showsCompass showsMyLocationButton={false} toolbarEnabled={false}>
             {trail.length > 1 && <Polyline coordinates={trail} strokeColor={colors.orange} strokeWidth={5} />}
             {current && destination && <Polyline coordinates={[current, destination]} strokeColor={colors.wine} strokeWidth={3} lineDashPattern={[8, 7]} />}
             {current && <Marker coordinate={current} title="Sua localização"><View style={styles.courierMarker}><Bike color="#fff" size={18} /></View></Marker>}
             {destination && <Marker coordinate={destination} title="Cliente"><View style={styles.destinationMarker}><UtensilsCrossed color="#fff" size={17} /></View></Marker>}
-          </MapView>
+          </MapView> : <View style={[styles.map, { alignItems: 'center', justifyContent: 'center', padding: 24 }]}><Text style={{ color: colors.ink, textAlign: 'center' }}>Mapa indisponível nesta versão. Atualize o aplicativo. Você ainda pode abrir a rota no Waze ou Google Maps.</Text></View>}
           <View style={[styles.locationChip, tracked ? styles.locationChipActive : null]}><View style={[styles.signalDot, tracked ? styles.signalDotActive : null]} /><View style={styles.flex}><Text style={[styles.locationTitle, tracked ? styles.locationTitleActive : null]}>{tracked ? 'Localização ativa' : order.status === 'ready' ? 'Pronta para ativar' : 'Buscando sinal…'}</Text><Text style={styles.locationText}>{tracked ? 'Enviando durante esta entrega' : 'Será ativada ao iniciar a entrega'}</Text></View></View>
           <Pressable style={styles.centerMap} onPress={() => mapRef.current?.animateToRegion(region, 500)}><Navigation color={colors.ink} size={21} /></Pressable>
         </View>
