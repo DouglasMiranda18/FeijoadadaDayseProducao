@@ -17,7 +17,7 @@ import { collection, doc, limit, onSnapshot, orderBy, query, serverTimestamp, up
 import { httpsCallable } from 'firebase/functions';
 import { onValue, ref } from 'firebase/database';
 import { auth, cloudFunctions, firestore, realtime } from './src/firebase';
-import { getTrackedOrderId, startDeliveryTracking, stopDeliveryTracking } from './src/backgroundLocation';
+import { getTrackedOrderId, refreshDeliveryPosition, startDeliveryTracking, stopDeliveryTracking } from './src/backgroundLocation';
 import { addressOf, beverages, colors, friendlyOrderId, money, navigationLinks, phoneLinks, statusCopy } from './src/format';
 import type { DeliveryOrder, DeliveryPosition } from './src/types';
 
@@ -230,9 +230,10 @@ function DeliveryScreen({ order, orders, tracked, onTrackChange, onSelect }: Del
         await startDeliveryTracking(order.id);
         onTrackChange(order.id);
       }
+      if (status === 'arrived' || status === 'delivered') await refreshDeliveryPosition(order.id);
       const update = httpsCallable<{ orderId: string; status: string }, { changed: boolean }>(cloudFunctions, 'updateCourierDelivery');
       await update({ orderId: order.id, status });
-      if (status === 'arrived' || status === 'delivered') {
+      if (status === 'delivered') {
         await stopDeliveryTracking(order.id);
         onTrackChange(null);
       }
@@ -303,7 +304,13 @@ function DeliveryScreen({ order, orders, tracked, onTrackChange, onSelect }: Del
 
         {contacts.whatsapp ? <Pressable style={styles.contactButton} onPress={() => openUrl(contacts.whatsapp, 'WhatsApp indisponível.')}><MessageCircle color={colors.wine} size={20} /><Text style={styles.contactButtonText}>Falar com cliente</Text></Pressable> : null}
         {next && <Pressable disabled={busy || (order.status === 'out_for_delivery' && !tracked)} style={({ pressed }) => [styles.confirmButton, pressed && styles.pressed, (busy || (order.status === 'out_for_delivery' && !tracked)) && styles.disabled]} onPress={advance}>{busy ? <ActivityIndicator color="#fff" /> : <><Check color="#fff" size={28} strokeWidth={3} /><Text style={styles.confirmButtonText}>{next.label}</Text></>}</Pressable>}
-        {order.status === 'out_for_delivery' && !tracked && <Text style={styles.warningText}>O rastreamento precisa estar ativo para avisar que chegou.</Text>}
+        {['out_for_delivery', 'arrived'].includes(order.status) && <Pressable style={styles.contactButton} disabled={busy} onPress={async () => {
+          setBusy(true);
+          try { await startDeliveryTracking(order.id); onTrackChange(order.id); Alert.alert('GPS atualizado', 'A localização foi enviada para o cliente.'); }
+          catch (error) { Alert.alert('Falha no GPS', messageOf(error)); }
+          finally { setBusy(false); }
+        }}><Navigation color={colors.wine} size={20} /><Text style={styles.contactButtonText}>Atualizar / retomar GPS</Text></Pressable>}
+        {['out_for_delivery', 'arrived'].includes(order.status) && <Text style={styles.warningText}>Chegada e conclusão exigem GPS recente e preciso, a até 100 metros do destino.</Text>}
         <Pressable style={styles.logoutLink} onPress={() => tracked ? Alert.alert('Entrega em andamento', 'Finalize esta entrega antes de sair da conta.') : signOut(auth)}><LogOut color={colors.muted} size={16} /><Text style={styles.logoutText}>Sair da conta</Text></Pressable>
       </ScrollView>
 

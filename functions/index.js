@@ -5,7 +5,7 @@ import { getDatabase } from 'firebase-admin/database';
 import { getAuth } from 'firebase-admin/auth';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
-initializeApp();
+initializeApp({ databaseURL: 'https://feijoadadadayse-a074d-default-rtdb.firebaseio.com' });
 const db = getFirestore();
 const REGION = 'southamerica-east1';
 const PAYMENT_FEES = { 'Cartão de Crédito': 2, 'Cartão de Débito': 1, Pix: 0, Dinheiro: 0 };
@@ -158,7 +158,7 @@ export const assignOrderCourier = onCall({ region: REGION, enforceAppCheck: fals
     courier: { name: safeText(courier.displayName || courier.publicName, 80), phone: safeText(courier.phone, 24) },
     assignedAt: FieldValue.serverTimestamp(), assignedBy: auth.uid, updatedAt: FieldValue.serverTimestamp()
   });
-  await getDatabase().ref(`deliveryAccess/${orderId}`).set({ customerId: orderSnap.data().customerId, courierId, assignedAt: Date.now() }).catch((error) => console.error('Falha ao preparar rastreamento:', error));
+  await getDatabase().ref(`deliveryAccess/${orderId}`).set({ customerId: orderSnap.data().customerId, courierId, assignedAt: Date.now() });
   const title = 'Nova entrega atribuída';
   const body = `O pedido ${orderId.slice(-6).toUpperCase()} está na sua lista de entregas.`;
   await courierRef.collection('notifications').add({ orderId, title, message: body, read: false, createdAt: FieldValue.serverTimestamp() });
@@ -182,6 +182,18 @@ export const setCourierRole = onCall({ region: REGION, enforceAppCheck: false },
   return { uid, isCourier: enabled };
 });
 
+export const prepareDeliveryTracking = onCall({ region: REGION, enforceAppCheck: false }, async (request) => {
+  const auth = requireCourier(request);
+  const orderId = safeText(request.data?.orderId, 120);
+  if (!orderId) throw new HttpsError('invalid-argument', 'Pedido inválido.');
+  const snap = await db.collection('orders').doc(orderId).get();
+  const order = snap.data();
+  if (!order || order.courierId !== auth.uid) throw new HttpsError('permission-denied', 'Entrega não atribuída à sua conta.');
+  if (!['ready', 'out_for_delivery', 'arrived'].includes(order.status)) throw new HttpsError('failed-precondition', 'Entrega não está ativa.');
+  await getDatabase().ref(`deliveryAccess/${orderId}`).set({ customerId: order.customerId, courierId: auth.uid, assignedAt: Date.now() });
+  return { ready: true };
+});
+
 export const updateCourierDelivery = onCall({ region: REGION, enforceAppCheck: false }, async (request) => {
   const auth = requireCourier(request);
   const orderId = safeText(request.data?.orderId, 120);
@@ -198,6 +210,12 @@ export const updateCourierDelivery = onCall({ region: REGION, enforceAppCheck: f
     if (order.courierId !== auth.uid) throw new HttpsError('permission-denied', 'Esta entrega não foi atribuída à sua conta.');
     if (eventSnap.exists) return false;
     if (order.status !== expectedPrevious) throw new HttpsError('failed-precondition', 'A entrega mudou de etapa. Atualize a tela.');
+    if (next === 'arrived' || next === 'delivered') {
+      const position = (await getDatabase().ref(`activeDeliveries/${orderId}`).get()).val();
+      const { validateDeliveryProximity } = await import('./delivery-proximity.mjs');
+      const result = validateDeliveryProximity(order.delivery, position, auth.uid);
+      if (!result.ok) throw new HttpsError('failed-precondition', result.message);
+    }
     if (next === 'delivered') await recordCompletedOrder(transaction, order);
     const at = Timestamp.now();
     const timestamps = next === 'out_for_delivery' ? { deliveryStartedAt: at } : next === 'arrived' ? { arrivedAt: at } : { deliveredAt: at };

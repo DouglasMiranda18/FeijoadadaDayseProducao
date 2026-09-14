@@ -285,6 +285,7 @@ export function startCourierLocation(orderId, onData, onError) {
         }
         const payload = {
             courierId: auth.currentUser?.uid || '', latitude: position.coords.latitude, longitude: position.coords.longitude,
+            sampledAt: position.timestamp,
             accuracy: position.coords.accuracy, heading: position.coords.heading ?? null, speed: position.coords.speed ?? null,
             updatedAt: firebase.database.ServerValue.TIMESTAMP, trail
         };

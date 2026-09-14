@@ -40,4 +40,4 @@ O plugin injeta a chave no manifesto nativo; uma mudança exige gerar e instalar
 
 ## Continuidade do rastreamento
 
-A localização é iniciada somente depois de tocar em **Iniciar entrega** e conceder a permissão “Sempre”. Ela para ao tocar em **Cheguei ao endereço** ou **Confirmar entrega**. Android e iOS podem interromper qualquer aplicativo se o usuário escolher “Forçar parada”; no Android, desativar a otimização de bateria para este aplicativo melhora a continuidade em aparelhos mais agressivos.
+A localização inicia em **Iniciar entrega** com a permissão “Sempre” e permanece ativa até **Confirmar entrega**. O primeiro envio precisa ser confirmado pelo banco. Use **Atualizar / retomar GPS** se houver falha. Chegada e conclusão são validadas no servidor: até 100 metros do destino, localização de menos de 1 minuto e precisão de até 50 metros. Sem coordenadas de destino, a loja deve corrigir o endereço. Android e iOS podem interromper o aplicativo se o usuário escolher “Forçar parada”; no Android, desativar a otimização de bateria pode melhorar a continuidade.
